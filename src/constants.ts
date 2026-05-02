@@ -57,6 +57,8 @@ export interface Tool {
   category: 'Adversarial' | 'Bias' | 'EVAL' | 'Governance' | 'Reporting';
   phase: number | string;
   license: string;
+  link: string;
+  linkLabel?: string;
 }
 
 export interface NpcPersona {
@@ -532,18 +534,18 @@ export const SCENARIOS: Scenario[] = [
 // ============================================================
 
 export const TOOLS: Tool[] = [
-  { name: 'Ollama', purpose: 'Local LLM hosting (Llama 3.1 8B, Mistral 7B, Qwen 2.5)', category: 'Adversarial', phase: 'All', license: 'Free' },
-  { name: 'MS AI Red Teaming Playground', purpose: 'Black-Hat-grade lab with 10+ challenges (Black Hat USA)', category: 'Adversarial', phase: 2, license: 'Free (Azure free tier)' },
-  { name: 'PyRIT', purpose: "Microsoft's risk identification toolkit — multi-turn orchestrators", category: 'Adversarial', phase: 2, license: 'MIT' },
-  { name: 'Garak', purpose: "NVIDIA's LLM vulnerability scanner — 50+ probe types", category: 'Adversarial', phase: 2, license: 'Apache 2' },
-  { name: 'Promptfoo', purpose: 'Eval + red-team CLI — YAML-driven test suites', category: 'Adversarial', phase: '2, 3, 5', license: 'MIT' },
-  { name: 'Aequitas', purpose: 'CMU bias audit toolkit — disparate impact, equalized odds', category: 'Bias', phase: 3, license: 'MIT' },
-  { name: 'Fairlearn', purpose: 'Microsoft fairness assessment — counterfactual + intersectional', category: 'Bias', phase: 3, license: 'MIT' },
-  { name: 'DeepEval', purpose: 'LLM eval — faithfulness, hallucination, bias metrics', category: 'EVAL', phase: '2, 3', license: 'Apache 2' },
-  { name: 'Giskard', purpose: 'AI testing — bias, robustness, vulnerability scanning', category: 'EVAL', phase: '2, 3', license: 'Apache 2' },
-  { name: 'Evidently', purpose: 'Data + model drift dashboards, monitoring reports', category: 'Governance', phase: 5, license: 'Apache 2' },
-  { name: 'WhyLabs', purpose: 'AI observability platform (free tier)', category: 'Governance', phase: 5, license: 'Free tier' },
-  { name: 'MITRE ATLAS', purpose: 'Adversarial ML threat matrix — technique taxonomy', category: 'Governance', phase: 'All', license: 'Free' }
+  { name: 'Ollama', purpose: 'Local LLM hosting (Llama 3.1 8B, Mistral 7B, Qwen 2.5)', category: 'Adversarial', phase: 'All', license: 'Free', link: 'https://ollama.com', linkLabel: 'ollama.com' },
+  { name: 'MS AI Red Teaming Playground', purpose: 'Black-Hat-grade lab with 10+ challenges (Black Hat USA)', category: 'Adversarial', phase: 2, license: 'Free (Azure free tier)', link: 'https://github.com/microsoft/AI-Red-Teaming-Playground-Labs', linkLabel: 'github.com/microsoft' },
+  { name: 'PyRIT', purpose: "Microsoft's risk identification toolkit — multi-turn orchestrators", category: 'Adversarial', phase: 2, license: 'MIT', link: 'https://github.com/Azure/PyRIT', linkLabel: 'github.com/Azure/PyRIT' },
+  { name: 'Garak', purpose: "NVIDIA's LLM vulnerability scanner — 50+ probe types", category: 'Adversarial', phase: 2, license: 'Apache 2', link: 'https://github.com/NVIDIA/garak', linkLabel: 'github.com/NVIDIA/garak' },
+  { name: 'Promptfoo', purpose: 'Eval + red-team CLI — YAML-driven test suites', category: 'Adversarial', phase: '2, 3, 5', license: 'MIT', link: 'https://www.promptfoo.dev', linkLabel: 'promptfoo.dev' },
+  { name: 'Aequitas', purpose: 'CMU bias audit toolkit — disparate impact, equalized odds', category: 'Bias', phase: 3, license: 'MIT', link: 'https://github.com/dssg/aequitas', linkLabel: 'github.com/dssg/aequitas' },
+  { name: 'Fairlearn', purpose: 'Microsoft fairness assessment — counterfactual + intersectional', category: 'Bias', phase: 3, license: 'MIT', link: 'https://fairlearn.org', linkLabel: 'fairlearn.org' },
+  { name: 'DeepEval', purpose: 'LLM eval — faithfulness, hallucination, bias metrics', category: 'EVAL', phase: '2, 3', license: 'Apache 2', link: 'https://www.deepeval.com', linkLabel: 'deepeval.com' },
+  { name: 'Giskard', purpose: 'AI testing — bias, robustness, vulnerability scanning', category: 'EVAL', phase: '2, 3', license: 'Apache 2', link: 'https://www.giskard.ai', linkLabel: 'giskard.ai' },
+  { name: 'Evidently', purpose: 'Data + model drift dashboards, monitoring reports', category: 'Governance', phase: 5, license: 'Apache 2', link: 'https://www.evidentlyai.com', linkLabel: 'evidentlyai.com' },
+  { name: 'WhyLabs', purpose: 'AI observability platform (free tier)', category: 'Governance', phase: 5, license: 'Free tier', link: 'https://whylabs.ai', linkLabel: 'whylabs.ai' },
+  { name: 'MITRE ATLAS', purpose: 'Adversarial ML threat matrix — technique taxonomy', category: 'Governance', phase: 'All', license: 'Free', link: 'https://atlas.mitre.org', linkLabel: 'atlas.mitre.org' }
 ];
 
 // ============================================================

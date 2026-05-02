@@ -34,6 +34,7 @@ import {
   ClipboardCheck,
   Network,
   ArrowRight,
+  ExternalLink,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -816,23 +817,35 @@ const ToolsView = () => (
   <div className="space-y-8">
     <header>
       <h1 className="text-3xl font-bold text-zinc-900">Tool Stack</h1>
-      <p className="text-zinc-500 mt-1">Industry-standard AI audit toolkit — all open-source or free-tier.</p>
+      <p className="text-zinc-500 mt-1">Industry-standard AI audit toolkit — all open-source or free-tier. Click any card to open the official site or repo in a new tab.</p>
     </header>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {(['Adversarial', 'Bias', 'EVAL', 'Governance'] as const).map(category => (
         <Card key={category} title={category} subtitle={`Tools for ${category.toLowerCase()} phase testing`}>
           <div className="space-y-3">
             {TOOLS.filter(t => t.category === category).map(tool => (
-              <div key={tool.name} className="p-3 border border-zinc-100 rounded-lg hover:border-zinc-300 transition-all">
-                <div className="flex justify-between items-start mb-1">
-                  <span className="font-bold text-zinc-900 text-sm">{tool.name}</span>
-                  <div className="flex items-center gap-1.5">
+              <a
+                key={tool.name}
+                href={tool.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group block p-3 border border-zinc-100 rounded-lg hover:border-zinc-900 hover:shadow-sm transition-all bg-white"
+              >
+                <div className="flex justify-between items-start mb-1 gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="font-bold text-zinc-900 text-sm group-hover:text-blue-600 transition-colors">{tool.name}</span>
+                    <ExternalLink size={11} className="text-zinc-300 group-hover:text-blue-500 transition-colors shrink-0" />
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <span className="text-[9px] font-mono bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-500">PHASE {tool.phase}</span>
                     <span className="text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 px-1.5 py-0.5 rounded">{tool.license}</span>
                   </div>
                 </div>
-                <p className="text-xs text-zinc-500">{tool.purpose}</p>
-              </div>
+                <p className="text-xs text-zinc-500 mb-1.5">{tool.purpose}</p>
+                <p className="text-[10px] font-mono text-zinc-400 group-hover:text-blue-600 transition-colors truncate">
+                  {tool.linkLabel ?? tool.link}
+                </p>
+              </a>
             ))}
           </div>
         </Card>
