@@ -1,0 +1,10 @@
+{
+  "name": "AuditAI Range",
+  "description": "A comprehensive 16-week program management and simulation suite for mastering AI auditing, governance, and red-teaming across healthcare, banking, and SaaS.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "AI_SIMULATION",
+    "PROGRAM_TRACKING",
+    "FRAMEWORK_MAPPING"
+  ]
+}
