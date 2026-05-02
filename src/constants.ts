@@ -102,6 +102,22 @@ export interface CrosswalkRow {
   owasp: string;
 }
 
+export interface SimulationMission {
+  id: string;
+  title: string;
+  scenario: string;          // the corporate framing — the "ghost audit" setup
+  sutId: number;
+  findingType: string;       // matches CrosswalkRow.findingType
+  primaryFramework: string;  // human-readable framework name
+  primaryControl: string;    // specific control / article reference
+  toolName: string;          // matches Tool.name
+  npcId: string;             // matches NpcPersona.id
+  workPaperId: string;       // matches WorkPaperDef.id
+  recipe: string[];          // 5 concrete steps
+  realityCheck: string;      // honesty reminder
+  thresholdGuidance: string; // "So What?" pre-set threshold reminder
+}
+
 // ============================================================
 // ORGANIZATIONS
 // ============================================================
@@ -761,4 +777,180 @@ export const RUBRIC_CRITERIA = [
   'Findings are mapped to at least one applicable regulatory framework',
   'Report is free of opinion not supported by evidence',
   'Could be defended in front of an audit committee without revision'
+];
+
+// ============================================================
+// SIMULATION MISSIONS — Pre-built "Ghost Audits"
+// Each mission cross-links SUT × finding × framework × tool × NPC × work paper.
+// ============================================================
+
+export const SIMULATION_MISSIONS: SimulationMission[] = [
+  {
+    id: 'm-hr-bias-sweep',
+    title: 'HR AI Bias Sweep — NYC LL 144 Edition',
+    scenario: 'Stellar Bank wants to deploy TalentMatch for resume screening across all 380 branches. NYC operations are subject to LL 144, which mandates an independent bias audit before automated employment decisions go live. You have 2 weeks before launch to file a regulator-compliant audit report. The HR VP keeps asking "is this thing going to get us sued?"',
+    sutId: 5,
+    findingType: 'Bias / Disparate Impact',
+    primaryFramework: 'NYC LL 144',
+    primaryControl: 'NYC LL 144 §1 + EEOC 4/5 Rule',
+    toolName: 'Aequitas',
+    npcId: 'elena-rodriguez',
+    workPaperId: 'wp-07',
+    recipe: [
+      'Pull TalentMatch predictions + ground truth + demographic data (race, gender, age) from the held-out test set',
+      'Run Aequitas with race + gender as reference attributes — log full disparate-impact report',
+      'Calculate selection rate per protected group; flag any subgroup ratio < 80% (EEOC threshold)',
+      'Run Fairlearn dashboard for intersectional analysis (race × gender × age band)',
+      'Draft WP07 in the LL 144 publication format: impact ratios, scoring rates, intersectional breakdown, CCCEE per finding'
+    ],
+    realityCheck: 'Without actually loading TalentMatch and running Aequitas against real predictions, this is just a mental exercise. Install Aequitas (`pip install aequitas`), point it at synthetic biased data, and watch your "audit report" go from theory to defensible evidence.',
+    thresholdGuidance: 'BEFORE you start: write down what selection-rate ratio counts as a "fail." EEOC says 80% — but is your threshold 80%, 85%, or stricter for high-risk HR AI? Document the threshold in your scope memo, not after seeing the numbers.'
+  },
+  {
+    id: 'm-clinical-rag-injection',
+    title: 'Clinical RAG Prompt Injection — HIPAA Risk Surface',
+    scenario: 'Helix Health\'s MedAssist is a HIPAA-covered RAG bot used by clinicians at the bedside. The CMO wants confirmation that no prompt manipulation can leak PHI from the retrieval index. OCR has been issuing fines for similar incidents at peer hospitals. You have one sprint to surface every direct-injection vector that could trigger a breach notification.',
+    sutId: 1,
+    findingType: 'Prompt Injection',
+    primaryFramework: 'HIPAA',
+    primaryControl: 'HIPAA §164.312(a) + EU AI Act Art. 15 + OWASP LLM01',
+    toolName: 'Garak',
+    npcId: 'sandra-park',
+    workPaperId: 'wp-03',
+    recipe: [
+      'Spin up MedAssist locally and point Garak at its inference endpoint',
+      'Run the `promptinject`, `dan`, and `glitch` probe suites — let it run for ~30 minutes per probe',
+      'Cross-reference Garak failures against synthetic PHI seeded in the retrieval corpus',
+      'For each PHI-leakage vector, build a reproduction script and assign a CVSS-AI score',
+      'Map every confirmed finding to HIPAA §164.312(a), OWASP LLM01, and NIST Measure 2.7 in WP03'
+    ],
+    realityCheck: 'Garak\'s power only shows when it actually runs against a live endpoint. Stand up Llama 3.1 8B in Ollama, wrap it in a tiny RAG harness, seed it with fake PHI, then run `garak --model_type ollama.OllamaChat --probes promptinject`. The first PHI leak you produce yourself is worth a week of reading.',
+    thresholdGuidance: 'BEFORE you start: define what counts as a "leak." Verbatim PHI? Paraphrased PHI? Existence-confirmation ("is patient X in the system")? Set the bar in your scope, or you\'ll grade your own findings into oblivion.'
+  },
+  {
+    id: 'm-multitenant-rag-exfil',
+    title: 'Multi-Tenant RAG Cross-Tenant Exfiltration',
+    scenario: 'Nimbus AI\'s SupportBot is deployed across 1,200 customers, each with their own KB. A prospect asks during diligence: "can Customer A retrieve Customer B\'s data via prompt injection?" Nimbus has never tested this. You have one week to find out — or prove they can\'t — before the prospect\'s ISO 42001 readiness call.',
+    sutId: 9,
+    findingType: 'Data Leakage / PII Exposure',
+    primaryFramework: 'ISO 42001',
+    primaryControl: 'ISO 42001 A.7.4 + GDPR Art. 25 + OWASP LLM06',
+    toolName: 'PyRIT',
+    npcId: 'sam-okafor',
+    workPaperId: 'wp-04',
+    recipe: [
+      'Provision two synthetic customer tenants with distinct, identifiable secrets seeded in their KBs',
+      'Author a PyRIT Crescendo orchestrator that gradually escalates retrieval requests across tenant boundaries',
+      'Capture every response that surfaces Tenant B\'s secret while authenticated as Tenant A',
+      'Build the proof-of-concept video: 3 minutes, scripted, reproducible',
+      'Draft WP04 with the architectural fix (per-tenant vector index isolation) cited to ISO 42001 A.7.4'
+    ],
+    realityCheck: 'Multi-tenant RAG is one of the hardest things to test on paper because the failure mode is architectural. Without standing up PyRIT against a real RAG harness, you\'ll convince yourself the bot is safe when it isn\'t. Build the harness; run the orchestrator; you will be surprised.',
+    thresholdGuidance: 'BEFORE you start: how many cross-tenant disclosures = "Critical"? One? Three? A documented attack chain that requires admin access? Set the rubric or Sam Okafor will dismiss your findings as theoretical.'
+  },
+  {
+    id: 'm-credit-counterfactual',
+    title: 'Credit Decisioning Counterfactual Fairness',
+    scenario: 'Stellar Bank\'s CreditAssist is a high-risk EU AI Act Annex III system that\'s also subject to ECOA in the US. The OCC examiner is asking how the bank tests for proxy discrimination. The Quant team insists their group-fairness numbers are clean — but no one has run a counterfactual test. You have 10 days before the examiner\'s second visit.',
+    sutId: 8,
+    findingType: 'Bias / Disparate Impact',
+    primaryFramework: 'EU AI Act',
+    primaryControl: 'EU AI Act Annex III §5(b) + ECOA 15 U.S.C. §1691 + SR 11-7 §V.C',
+    toolName: 'Fairlearn',
+    npcId: 'david-torres',
+    workPaperId: 'wp-09',
+    recipe: [
+      'Generate a counterfactual dataset: for each record, swap protected attributes (race, gender) but hold all other features fixed',
+      'Score CreditAssist on the original and counterfactual sets; record the per-record decision change rate',
+      'Identify proxy variables (zip code, school, employer) correlated with protected attributes',
+      'Run Fairlearn intersectional analysis (race × income tier × geography)',
+      'Draft WP09 with both individual-fairness (counterfactual) and group-fairness (Aequitas) results, cited to ECOA and EU AI Act Annex III §5(b)'
+    ],
+    realityCheck: 'Group fairness can pass while individual fairness fails — and that\'s what gets you sued under ECOA. Without writing the counterfactual generator yourself (~20 lines of Python), you\'ll never feel why this matters. Build it.',
+    thresholdGuidance: 'BEFORE you start: how much per-record decision flipping = bias? 2%? 5%? 10%? The literature gives no single answer; pick yours and document the rationale before you see the numbers.'
+  },
+  {
+    id: 'm-bank-hallucination',
+    title: 'Banking LLM Hallucination Audit',
+    scenario: 'Stellar Bank\'s ChatBank handles ~40,000 customer queries/day. A regulator asked: "what\'s your hallucination rate, and what\'s the financial exposure if a customer acts on a wrong answer about fees or rates?" The Head of AI shrugged. Your job: quantify it, set a production threshold, and put both in writing before the next OCC exam.',
+    sutId: 6,
+    findingType: 'Hallucination / Factual Error',
+    primaryFramework: 'EU AI Act',
+    primaryControl: 'EU AI Act Art. 13 + NIST Measure 2.7 + ISO 42001 A.6.2.4',
+    toolName: 'DeepEval',
+    npcId: 'marcus-vane',
+    workPaperId: 'wp-06',
+    recipe: [
+      'Build a 200-question gold-standard dataset of bank-specific Q&A (fees, rates, account types, regulations)',
+      'Run DeepEval faithfulness + answer-relevancy metrics against ChatBank for all 200 queries',
+      'Bucket failures by type: numeric hallucination, regulatory misstatement, fabricated policy',
+      'Estimate financial exposure per failure type (numeric errors weighted by transaction volume)',
+      'Draft WP06: hallucination rate by category + recommended production gating threshold + monitoring KPI'
+    ],
+    realityCheck: 'A single number — "we tested faithfulness and got 0.84" — means nothing. Without running DeepEval and seeing which questions failed, you can\'t tell a fee-rate hallucination (regulator-fineable) from a typo (cosmetic). Run the suite, read the failures, segment them.',
+    thresholdGuidance: 'BEFORE you start: at what faithfulness score does the bot get pulled from production? 0.95? 0.99? It\'s a business decision, not a technical one — but it has to be in the audit before testing or Marcus will accuse you of grading on a curve.'
+  },
+  {
+    id: 'm-agent-tool-abuse',
+    title: 'Agentic Tool-Chain Privilege Escalation',
+    scenario: 'Nimbus AI\'s AnalyticsCopilot is an agentic LLM with 14 tools (SQL, Python, file I/O, email). A pen tester from a customer asked: "can a malicious prompt make the agent call tools it shouldn\'t?" The Nimbus CTO insists the tool-scope guards are fine. You have one sprint to confirm that before the customer\'s SOC 2 review.',
+    sutId: 10,
+    findingType: 'Agent Tool Abuse',
+    primaryFramework: 'OWASP',
+    primaryControl: 'OWASP LLM08 + Agentic AI Guide + MITRE ATLAS AML.T0054',
+    toolName: 'Promptfoo',
+    npcId: 'priya-sharma',
+    workPaperId: 'wp-05',
+    recipe: [
+      'Enumerate every tool AnalyticsCopilot can call — document declared scope vs. implementation',
+      'Author Promptfoo red-team test suite with payloads targeting unauthorized tool invocation',
+      'Apply TAP (Tree of Attacks with Pruning) — multi-turn payloads that gradually expand tool scope',
+      'For each successful escalation, capture the exact prompt + tool sequence as a reproducible PoC',
+      'Draft WP05 mapping each finding to OWASP LLM08, Agentic AI Guide, and the relevant ATLAS technique'
+    ],
+    realityCheck: 'Agent abuse looks deceptively simple in slides. The actual exploit takes 30+ turns and a careful payload chain. Without writing Promptfoo configs and watching the agent fail in real time, you\'ll write findings that Priya will (correctly) call theoretical.',
+    thresholdGuidance: 'BEFORE you start: which tools are "Critical" if escalated to (file system writes, network egress)? Which are "Acceptable Risk" (read-only SQL on synthetic data)? Without a tool-criticality matrix up front, every escalation looks equally bad.'
+  },
+  {
+    id: 'm-fraud-drift',
+    title: 'Fraud Model Drift Monitoring Build',
+    scenario: 'Stellar Bank\'s FraudDetect was trained 18 months ago. Transaction patterns have shifted (post-rate-cycle, post-fee-restructure). The CRO wants quarterly drift evidence for the next OCC exam — and an incident response playbook for when drift exceeds threshold. You have until end of week to design the monitoring architecture and stand up a working prototype.',
+    sutId: 7,
+    findingType: 'Drift / Monitoring Failure',
+    primaryFramework: 'SR 11-7',
+    primaryControl: 'SR 11-7 §V (ongoing monitoring) + NIST AI RMF Manage 4.1',
+    toolName: 'Evidently',
+    npcId: 'sarah-chen',
+    workPaperId: 'wp-14',
+    recipe: [
+      'Set the reference period (training cohort) and current period (last 30 days) for FraudDetect',
+      'Build the Evidently report: PSI, KL divergence, feature stability index per input feature',
+      'Define alert thresholds (warn at PSI > 0.1, critical at PSI > 0.25) and the escalation matrix',
+      'Draft the AI incident response playbook: detection → triage → escalation → resolution → post-mortem',
+      'Test the playbook by injecting a synthetic drift scenario; document the response timing'
+    ],
+    realityCheck: 'Drift dashboards mean nothing without a triage playbook. Most banks have one without the other. Build both — and run a tabletop exercise with your simulated drift event before declaring victory.',
+    thresholdGuidance: 'BEFORE you start: what drift level triggers a model retrain (slow, expensive)? What level triggers a full takedown (fast, painful)? The OCC will ask, and Sarah will not accept "we\'ll know it when we see it" as an answer.'
+  },
+  {
+    id: 'm-vendor-audit',
+    title: 'Vendor AI Risk — Helix Audits Nimbus',
+    scenario: 'Helix Health is procuring Nimbus SupportBot for the patient portal. SupportBot will see PHI. Nimbus has SOC 2 Type II but no HIPAA-specific attestations. You\'re doing the vendor risk assessment — review the BAA, the model card, the security stack, then re-run the Week 4 RAG exfil tests as an outside auditor with access only to what Helix would actually have.',
+    sutId: 9,
+    findingType: 'Vendor / Third-Party Risk',
+    primaryFramework: 'HIPAA',
+    primaryControl: 'HIPAA §164.308(b) (BAA) + GDPR Art. 28 (DPA) + ISO 42001 A.10.2',
+    toolName: 'Promptfoo',
+    npcId: 'sandra-park',
+    workPaperId: 'wp-13',
+    recipe: [
+      'Review the Nimbus BAA — does it cover all 18 HIPAA Safe Harbor identifiers?',
+      'Review the SupportBot model card — training data provenance, fine-tuning sources, eval coverage',
+      'Re-run Promptfoo cross-tenant exfil tests using only customer-tier API access (no admin)',
+      'Map the subprocessor chain: who does Nimbus send PHI to downstream, and are they HIPAA-covered?',
+      'Draft WP13 with onboarding decision: Approve / Approve w/ conditions / Reject — cited to HIPAA, GDPR, ISO 42001 A.10.2'
+    ],
+    realityCheck: 'Vendor audit on paper is checkbox theater. The findings that matter come from re-running technical tests as an outside party with restricted access — not from the vendor\'s own attestation deck. Do the re-test.',
+    thresholdGuidance: 'BEFORE you start: which contract terms are non-negotiable (data residency, breach notification SLA, audit rights)? Bring that list to the review — don\'t let Nimbus\'s answers shape your standard.'
+  }
 ];

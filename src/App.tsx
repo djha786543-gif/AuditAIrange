@@ -35,6 +35,11 @@ import {
   Network,
   ArrowRight,
   ExternalLink,
+  Crosshair,
+  Shuffle,
+  AlertCircle,
+  Database,
+  Gauge,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -49,8 +54,10 @@ import {
   PROGRAM_RISKS,
   WORKPAPER_DEFINITIONS,
   FRAMEWORK_CROSSWALK,
+  SIMULATION_MISSIONS,
   ProgramPhase,
   NpcPersona,
+  SimulationMission,
 } from './constants';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -58,7 +65,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 // TYPES
 // ============================================================
 
-type View = 'dashboard' | 'guide' | 'orgs' | 'suts' | 'frameworks' | 'workpapers' | 'npc-sim' | 'tools' | 'settings';
+type View = 'dashboard' | 'guide' | 'mission' | 'orgs' | 'suts' | 'frameworks' | 'workpapers' | 'npc-sim' | 'tools' | 'settings';
 type WorkPaperStatus = 'not-started' | 'in-progress' | 'needs-revision' | 'complete';
 
 interface WorkPaperRecord {
@@ -153,11 +160,13 @@ const DashboardView = ({
   completedTasks,
   workpaperData,
   onNavigate,
+  onOpenMission,
 }: {
   onSelectPhase: (p: ProgramPhase) => void;
   completedTasks: string[];
   workpaperData: Record<string, WorkPaperRecord>;
   onNavigate: (v: View) => void;
+  onOpenMission: (id: string) => void;
 }) => {
   const completedWPs = Object.values(workpaperData).filter(d => d.status === 'complete').length;
   const totalCriteria = Object.values(workpaperData).reduce((acc, d) => acc + d.criteria.filter(Boolean).length, 0);
@@ -401,6 +410,176 @@ const DashboardView = ({
           );
         })}
       </div>
+
+      {/* Mission Mode Card */}
+      <div>
+        <h3 className="text-xl font-bold text-zinc-900 mb-4 flex items-center gap-2">
+          <Crosshair size={20} /> Mission Mode — Preset Ghost Audits
+        </h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {SIMULATION_MISSIONS.slice(0, 4).map(mission => (
+            <Card key={mission.id} className="cursor-pointer hover:border-zinc-900 hover:shadow-lg transition-all groups">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h4 className="font-bold text-zinc-900 text-sm">{mission.title}</h4>
+                  <p className="text-[10px] text-zinc-500 mt-0.5 font-mono">SUT {mission.sutId} · {mission.primaryFramework}</p>
+                </div>
+                <span className="text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded shrink-0">{mission.findingType}</span>
+              </div>
+              <p className="text-xs text-zinc-600 line-clamp-2 mb-4 leading-relaxed">{mission.scenario}</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="text-[9px] bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded">{mission.toolName}</span>
+                <span className="text-[9px] bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded">{mission.npcId}</span>
+              </div>
+              <button
+                onClick={() => onOpenMission(mission.id)}
+                className="w-full bg-zinc-900 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+              >
+                Start Mission <Crosshair size={14} />
+              </button>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// MISSION MODE VIEW
+// ============================================================
+
+const MissionModeView = ({
+  currentMissionId,
+  onSelectMission,
+}: {
+  currentMissionId: string | null;
+  onSelectMission: (id: string) => void;
+}) => {
+  const mission = currentMissionId ? SIMULATION_MISSIONS.find(m => m.id === currentMissionId) : null;
+
+  if (!mission) {
+    return (
+      <div className="space-y-8">
+        <header>
+          <h1 className="text-3xl font-bold text-zinc-900">Mission Mode</h1>
+          <p className="text-zinc-500 mt-1">Preset ghost audit scenarios — each scoped to one finding type, framework, and deliverable.</p>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {SIMULATION_MISSIONS.map(m => (
+            <Card key={m.id} className="cursor-pointer hover:border-zinc-900 hover:shadow-lg transition-all">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h4 className="font-bold text-zinc-900 text-sm">{m.title}</h4>
+                  <p className="text-[10px] text-zinc-500 mt-0.5 font-mono">SUT {m.sutId} · {m.primaryFramework}</p>
+                </div>
+                <span className="text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded shrink-0">{m.findingType}</span>
+              </div>
+              <p className="text-xs text-zinc-600 line-clamp-3 mb-4 leading-relaxed">{m.scenario}</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="text-[9px] bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded">{m.toolName}</span>
+                <span className="text-[9px] bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded">{NPC_PERSONAS.find(n => n.id === m.npcId)?.name}</span>
+              </div>
+              <button
+                onClick={() => onSelectMission(m.id)}
+                className="w-full bg-zinc-900 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+              >
+                Launch <Crosshair size={14} />
+              </button>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onSelectMission('')}
+            className="flex items-center gap-2 text-zinc-400 hover:text-zinc-900 transition-colors text-sm font-medium"
+          >
+            <ChevronRight className="rotate-180" size={16} /> Back to Missions
+          </button>
+          <span className="text-[10px] font-bold bg-zinc-100 text-zinc-600 px-3 py-1.5 rounded">MISSION</span>
+        </div>
+        <span className="text-sm font-bold text-zinc-600">{mission.id}</span>
+      </div>
+
+      <Card title={mission.title} className="!border-2 !border-zinc-900">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div>
+            <p className="text-[10px] font-bold text-zinc-400 uppercase mb-2">Scenario</p>
+            <p className="text-sm text-zinc-700 leading-relaxed italic border-l-2 border-zinc-200 pl-4">{mission.scenario}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-zinc-400 uppercase mb-2">SUT & Framework</p>
+            <p className="text-sm text-zinc-700 mb-2">
+              <strong>SUT {mission.sutId}:</strong> {SUTS.find(s => s.id === mission.sutId)?.name}
+            </p>
+            <p className="text-sm text-zinc-700">
+              <strong>Framework:</strong> {mission.primaryFramework}
+            </p>
+            <p className="text-[10px] text-zinc-500 mt-2 font-mono">{mission.primaryControl}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-zinc-400 uppercase mb-2">Audit Assets</p>
+            <div className="space-y-2 text-sm text-zinc-700">
+              <p><strong>Tool:</strong> {mission.toolName}</p>
+              <p><strong>Stakeholder:</strong> {NPC_PERSONAS.find(n => n.id === mission.npcId)?.name}</p>
+              <p><strong>Work Paper:</strong> {WORKPAPER_DEFINITIONS.find(w => w.id === mission.workPaperId)?.title}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-zinc-200 pt-6 mt-6">
+          <div>
+            <h4 className="font-bold text-zinc-900 mb-3 text-sm">5-Step Execution Recipe</h4>
+            <ol className="space-y-2">
+              {mission.recipe.map((step, idx) => (
+                <li key={idx} className="flex gap-3">
+                  <span className="text-[10px] font-bold bg-zinc-900 text-white px-2 py-0.5 rounded shrink-0">{idx + 1}</span>
+                  <span className="text-xs text-zinc-600 leading-relaxed">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-bold text-blue-900 mb-2 text-sm flex items-center gap-2">
+                <AlertCircle size={14} /> Reality Check
+              </h4>
+              <p className="text-xs text-blue-700 leading-relaxed">{mission.realityCheck}</p>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <h4 className="font-bold text-amber-900 mb-2 text-sm flex items-center gap-2">
+                <Gauge size={14} /> Threshold Guidance
+              </h4>
+              <p className="text-xs text-amber-700 leading-relaxed">{mission.thresholdGuidance}</p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <div className="flex gap-3 justify-center pt-4">
+        <button
+          onClick={() => onSelectMission('')}
+          className="px-6 py-2.5 border border-zinc-200 text-zinc-700 rounded-lg text-sm font-bold hover:bg-zinc-50 transition-colors"
+        >
+          Back to Missions
+        </button>
+        <a
+          href={`https://github.com/search?q=repo:djha786543-gif/AuditAIrange+${mission.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-6 py-2.5 bg-zinc-900 text-white rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2"
+        >
+          View Evidence Docs <ExternalLink size={14} />
+        </a>
+      </div>
     </div>
   );
 };
@@ -461,7 +640,7 @@ const OrgsView = () => (
 // SUTS VIEW
 // ============================================================
 
-const SutsView = () => {
+const SutsView = ({ onOpenMission }: { onOpenMission: (id: string) => void }) => {
   const [orgFilter, setOrgFilter] = useState<string>('All');
   const [expanded, setExpanded] = useState<number | null>(null);
   const filtered = orgFilter === 'All' ? SUTS : orgFilter === 'High-Risk' ? SUTS.filter(s => s.riskTier.includes('High')) : SUTS.filter(s => s.org === orgFilter);
@@ -515,7 +694,7 @@ const SutsView = () => {
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <div className="px-4 pb-4 pt-0 bg-zinc-50 border-t border-zinc-100 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="px-4 pb-4 pt-0 bg-zinc-50 border-t border-zinc-100 grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div>
                         <p className="text-[10px] font-bold text-zinc-400 uppercase mb-1">Primary Test</p>
                         <p className="text-sm text-zinc-700 font-mono">{sut.primaryTest}</p>
@@ -527,6 +706,18 @@ const SutsView = () => {
                       <div>
                         <p className="text-[10px] font-bold text-zinc-400 uppercase mb-1">Primary Phase</p>
                         <p className="text-sm text-zinc-700">Phase {sut.primaryPhase} — {PHASES.find(p => p.id === sut.primaryPhase)?.title}</p>
+                      </div>
+                      <div className="flex flex-col items-center justify-center">
+                        {SIMULATION_MISSIONS.filter(m => m.sutId === sut.id).length > 0 ? (
+                          <button
+                            onClick={() => onOpenMission(SIMULATION_MISSIONS.find(m => m.sutId === sut.id)?.id || '')}
+                            className="w-full px-3 py-2 bg-purple-600 text-white rounded-lg text-xs font-bold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Crosshair size={12} /> Ghost Audit
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-zinc-400 text-center">No missions available</span>
+                        )}
                       </div>
                     </div>
                   </motion.div>
@@ -819,6 +1010,24 @@ const ToolsView = () => (
       <h1 className="text-3xl font-bold text-zinc-900">Tool Stack</h1>
       <p className="text-zinc-500 mt-1">Industry-standard AI audit toolkit — all open-source or free-tier. Click any card to open the official site or repo in a new tab.</p>
     </header>
+
+    {/* Reality Check Banner */}
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-xl p-5 flex items-start gap-4"
+    >
+      <div className="bg-orange-500 text-white rounded-lg p-3 shrink-0">
+        <AlertTriangle size={20} />
+      </div>
+      <div className="flex-1">
+        <h4 className="font-bold text-orange-900 mb-1">🚨 Reality Check: Tools Without Execution = Theoretical Only</h4>
+        <p className="text-sm text-orange-800 leading-relaxed">
+          Reading about Garak, PyRIT, Aequitas, and Fairlearn teaches you the vocabulary. Actually <strong>running</strong> them against your SUTs teaches you the craft. Every tool here must be installed, tested against a SUT, and captured in evidence. If you finish Week 16 with screenshots of installed tools but no finding evidence, your portfolio will look hollow.
+        </p>
+      </div>
+    </motion.div>
+
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {(['Adversarial', 'Bias', 'EVAL', 'Governance'] as const).map(category => (
         <Card key={category} title={category} subtitle={`Tools for ${category.toLowerCase()} phase testing`}>
@@ -1053,6 +1262,196 @@ const GuideView = ({ onNavigate }: { onNavigate: (v: View) => void }) => {
 };
 
 // ============================================================
+// MISSION VIEW — Pre-built "Ghost Audit" simulation missions
+// ============================================================
+
+const MissionView = ({
+  missionId,
+  setMissionId,
+  onNavigate,
+}: {
+  missionId: string | null;
+  setMissionId: (id: string) => void;
+  onNavigate: (v: View) => void;
+}) => {
+  const mission = SIMULATION_MISSIONS.find(m => m.id === missionId) ?? SIMULATION_MISSIONS[0];
+  const sut = SUTS.find(s => s.id === mission.sutId)!;
+  const tool = TOOLS.find(t => t.name === mission.toolName);
+  const npc = NPC_PERSONAS.find(n => n.id === mission.npcId)!;
+  const wp = WORKPAPER_DEFINITIONS.find(w => w.id === mission.workPaperId)!;
+  const crosswalk = FRAMEWORK_CROSSWALK.find(c => c.findingType === mission.findingType);
+  const phase = PHASES.find(p => p.id === wp.phaseId)!;
+
+  const shuffle = () => {
+    const others = SIMULATION_MISSIONS.filter(m => m.id !== mission.id);
+    setMissionId(others[Math.floor(Math.random() * others.length)].id);
+  };
+
+  return (
+    <div className="space-y-8">
+      <header className="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <div className="flex items-center gap-2 text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-1">
+            <Crosshair size={11} /> Ghost Audit Mission
+          </div>
+          <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">{mission.title}</h1>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={shuffle}
+            className="flex items-center gap-2 bg-white border border-zinc-200 hover:border-zinc-900 px-4 py-2 rounded-lg text-sm font-bold text-zinc-700 transition-colors"
+          >
+            <Shuffle size={14} /> Different mission
+          </button>
+        </div>
+      </header>
+
+      {/* Scenario hero */}
+      <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-2xl p-7 text-white shadow-lg">
+        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">📋 The Scenario</p>
+        <p className="text-base leading-relaxed text-white/90">{mission.scenario}</p>
+      </div>
+
+      {/* Mission scaffolding — 4-card grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* SUT */}
+        <button
+          onClick={() => onNavigate('suts')}
+          className="text-left bg-white border border-zinc-200 rounded-xl p-5 hover:border-zinc-900 hover:shadow-sm transition-all group"
+        >
+          <div className="flex items-start justify-between mb-2">
+            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">System Under Test</p>
+            <Boxes size={14} className="text-zinc-400 group-hover:text-blue-500" />
+          </div>
+          <p className="font-bold text-zinc-900 text-lg leading-tight">{sut.name}</p>
+          <p className="text-xs text-zinc-500 mt-1">{sut.org} · {sut.type}</p>
+          <p className={`text-[10px] font-bold mt-2 inline-block px-2 py-0.5 rounded border ${
+            sut.riskTier.includes('High') ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-zinc-50 border-zinc-200 text-zinc-500'
+          }`}>{sut.riskTier}</p>
+        </button>
+
+        {/* Finding type + control */}
+        <button
+          onClick={() => onNavigate('frameworks')}
+          className="text-left bg-white border border-zinc-200 rounded-xl p-5 hover:border-zinc-900 hover:shadow-sm transition-all group"
+        >
+          <div className="flex items-start justify-between mb-2">
+            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">What You're Testing For</p>
+            <Network size={14} className="text-zinc-400 group-hover:text-blue-500" />
+          </div>
+          <p className="font-bold text-zinc-900 text-lg leading-tight">{mission.findingType}</p>
+          <p className="text-xs text-zinc-500 mt-1 font-mono">{mission.primaryControl}</p>
+          {crosswalk && (
+            <p className="text-[10px] text-zinc-400 mt-2 italic">Cross-walk to all 7 frameworks in Framework Mapper →</p>
+          )}
+        </button>
+
+        {/* Tool */}
+        {tool && (
+          <a
+            href={tool.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-left bg-white border border-zinc-200 rounded-xl p-5 hover:border-zinc-900 hover:shadow-sm transition-all group block"
+          >
+            <div className="flex items-start justify-between mb-2">
+              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Recommended Tool</p>
+              <ExternalLink size={14} className="text-zinc-400 group-hover:text-blue-500" />
+            </div>
+            <p className="font-bold text-zinc-900 text-lg leading-tight">{tool.name}</p>
+            <p className="text-xs text-zinc-500 mt-1">{tool.purpose}</p>
+            <p className="text-[10px] font-mono text-zinc-400 mt-2 group-hover:text-blue-600">{tool.linkLabel ?? tool.link}</p>
+          </a>
+        )}
+
+        {/* NPC */}
+        <button
+          onClick={() => onNavigate('npc-sim')}
+          className="text-left bg-white border border-zinc-200 rounded-xl p-5 hover:border-zinc-900 hover:shadow-sm transition-all group"
+        >
+          <div className="flex items-start justify-between mb-2">
+            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Stress-Test With</p>
+            <MessageSquare size={14} className="text-zinc-400 group-hover:text-blue-500" />
+          </div>
+          <p className="font-bold text-zinc-900 text-lg leading-tight">{npc.name}</p>
+          <p className="text-xs text-zinc-500 mt-1">{npc.role} · {npc.org}</p>
+          <p className="text-[10px] text-zinc-400 mt-2 italic line-clamp-2">"{npc.pushback}"</p>
+        </button>
+      </div>
+
+      {/* The 5-step recipe */}
+      <Card title="The Recipe" subtitle="5 concrete steps to execute this mission">
+        <ol className="space-y-3">
+          {mission.recipe.map((step, i) => (
+            <li key={i} className="flex items-start gap-4">
+              <span className="bg-zinc-900 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+              <p className="text-sm text-zinc-700 leading-relaxed pt-1">{step}</p>
+            </li>
+          ))}
+        </ol>
+      </Card>
+
+      {/* Reality check + Threshold guidance — the honesty layer */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="!bg-amber-50 !border-amber-200">
+          <div className="flex items-start gap-3 mb-2">
+            <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-[10px] font-bold text-amber-900 uppercase tracking-widest">Reality Check</p>
+          </div>
+          <p className="text-sm text-amber-900 leading-relaxed">{mission.realityCheck}</p>
+        </Card>
+
+        <Card className="!bg-blue-50 !border-blue-200">
+          <div className="flex items-start gap-3 mb-2">
+            <Gauge size={18} className="text-blue-600 shrink-0 mt-0.5" />
+            <p className="text-[10px] font-bold text-blue-900 uppercase tracking-widest">Set Your Threshold First</p>
+          </div>
+          <p className="text-sm text-blue-900 leading-relaxed">{mission.thresholdGuidance}</p>
+        </Card>
+      </div>
+
+      {/* Document Findings — the WP target */}
+      <button
+        onClick={() => onNavigate('workpapers')}
+        className="w-full text-left bg-white border-2 border-zinc-900 rounded-xl p-5 hover:bg-zinc-50 transition-all group flex items-center gap-4"
+      >
+        <div className="bg-zinc-900 text-white rounded-lg p-3 shrink-0">
+          <FileCheck2 size={20} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Document Findings In</p>
+          <p className="font-bold text-zinc-900">WP{wp.number.toString().padStart(2, '0')}: {wp.title}</p>
+          <p className="text-xs text-zinc-500 mt-0.5">Phase {phase.id} · Week {wp.week} · {wp.anchor}</p>
+        </div>
+        <ArrowRight size={18} className="text-zinc-400 group-hover:text-zinc-900 group-hover:translate-x-1 transition-all" />
+      </button>
+
+      {/* Mission picker — quick-jump to other missions */}
+      <Card title="All 8 Ghost Audit Missions" subtitle="Each cross-links a SUT × finding × framework × tool × NPC × work paper">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {SIMULATION_MISSIONS.map(m => (
+            <button
+              key={m.id}
+              onClick={() => setMissionId(m.id)}
+              className={`text-left p-3 rounded-lg border transition-all ${
+                m.id === mission.id
+                  ? 'bg-zinc-900 border-zinc-900 text-white'
+                  : 'bg-white border-zinc-200 hover:border-zinc-400 text-zinc-700'
+              }`}
+            >
+              <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${m.id === mission.id ? 'text-zinc-400' : 'text-zinc-400'}`}>
+                {SUTS.find(s => s.id === m.sutId)?.name} · {m.toolName}
+              </p>
+              <p className={`text-xs font-bold leading-snug ${m.id === mission.id ? 'text-white' : 'text-zinc-900'}`}>{m.title}</p>
+            </button>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ============================================================
 // NPC SIMULATOR VIEW
 // ============================================================
 
@@ -1138,8 +1537,8 @@ Auditor says: ${input}`;
   return (
     <div className="flex flex-col h-[calc(100vh-120px)] space-y-4">
       <header>
-        <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">NPC Stakeholder Simulator</h1>
-        <p className="text-zinc-500 mt-1">Practice defending findings. 15 stakeholders across 3 organizations — each with distinct pushback patterns.</p>
+        <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">NPC Pushback Simulator</h1>
+        <p className="text-zinc-500 mt-1">Defend your audit findings under fire. 15 hardened stakeholders across 3 organizations — each with real regulatory stalling tactics and ROI concerns.</p>
       </header>
 
       {/* Org selector */}
@@ -1324,9 +1723,17 @@ export default function App() {
 
   const completedWPCount = (Object.values(workpaperData) as WorkPaperRecord[]).filter(d => d.status === 'complete').length;
 
+  const [currentMissionId, setCurrentMissionId] = useState<string | null>(null);
+  const openMission = (id: string) => {
+    setCurrentMissionId(id);
+    setCurrentView('mission');
+    setSelectedPhase(null);
+  };
+
   const nav: { view: View; icon: any; label: string; badge?: number }[] = [
     { view: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { view: 'guide', icon: Compass, label: 'How To Use' },
+    { view: 'mission', icon: Crosshair, label: 'Mission Mode', badge: SIMULATION_MISSIONS.length },
     { view: 'orgs', icon: Building2, label: 'Organization Hub' },
     { view: 'suts', icon: Boxes, label: 'SUT Inventory' },
     { view: 'workpapers', icon: FileCheck2, label: 'Work Papers', badge: completedWPCount },
@@ -1499,10 +1906,12 @@ export default function App() {
                       completedTasks={completedTasks}
                       workpaperData={workpaperData}
                       onNavigate={view => { setCurrentView(view); setSelectedPhase(null); }}
+                      onOpenMission={openMission}
                     />
                   )}
+                  {currentView === 'mission' && <MissionModeView currentMissionId={currentMissionId} onSelectMission={openMission} />}
                   {currentView === 'orgs' && <OrgsView />}
-                  {currentView === 'suts' && <SutsView />}
+                  {currentView === 'suts' && <SutsView onOpenMission={openMission} />}
                   {currentView === 'workpapers' && (
                     <WorkpapersView
                       workpaperData={workpaperData}
