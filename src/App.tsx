@@ -456,6 +456,7 @@ const MissionModeView = ({
   currentMissionId: string | null;
   onSelectMission: (id: string) => void;
 }) => {
+  const [showEvidenceChecklist, setShowEvidenceChecklist] = useState(false);
   const mission = currentMissionId ? SIMULATION_MISSIONS.find(m => m.id === currentMissionId) : null;
 
   if (!mission) {
@@ -571,15 +572,104 @@ const MissionModeView = ({
         >
           Back to Missions
         </button>
-        <a
-          href="https://github.com/djha786543-gif/AuditAIrange"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-6 py-2.5 bg-zinc-900 text-white rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2"
+        <button
+          onClick={() => setShowEvidenceChecklist(true)}
+          className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors flex items-center gap-2"
         >
-          View Evidence Docs <ExternalLink size={14} />
-        </a>
+          Evidence Checklist <CheckCircle2 size={14} />
+        </button>
       </div>
+
+      {/* Evidence Checklist Modal */}
+      <AnimatePresence>
+        {showEvidenceChecklist && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowEvidenceChecklist(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl"
+            >
+              <div className="p-8 space-y-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-2xl font-bold text-zinc-900 mb-1">{mission?.title}</h3>
+                    <p className="text-sm text-zinc-500">Evidence artifacts required for this simulation</p>
+                  </div>
+                  <button
+                    onClick={() => setShowEvidenceChecklist(false)}
+                    className="text-zinc-400 hover:text-zinc-900 transition-colors"
+                  >
+                    <XCircle size={24} />
+                  </button>
+                </div>
+
+                <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4">
+                  <h4 className="font-bold text-zinc-900 mb-3 text-sm">What to capture:</h4>
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-3 text-sm text-zinc-700">
+                      <div className="w-4 h-4 rounded-full bg-blue-500 mt-1 shrink-0" />
+                      <span><strong>Tool Output Logs:</strong> Full terminal output or exported results from {mission?.toolName}</span>
+                    </li>
+                    <li className="flex items-start gap-3 text-sm text-zinc-700">
+                      <div className="w-4 h-4 rounded-full bg-blue-500 mt-1 shrink-0" />
+                      <span><strong>Screenshots of Findings:</strong> Visual evidence of vulnerabilities discovered in SUT {mission?.sutId}</span>
+                    </li>
+                    <li className="flex items-start gap-3 text-sm text-zinc-700">
+                      <div className="w-4 h-4 rounded-full bg-blue-500 mt-1 shrink-0" />
+                      <span><strong>Proof-of-Concept Scripts:</strong> Reproducible steps or code to trigger the {mission?.findingType}</span>
+                    </li>
+                    <li className="flex items-start gap-3 text-sm text-zinc-700">
+                      <div className="w-4 h-4 rounded-full bg-blue-500 mt-1 shrink-0" />
+                      <span><strong>Data Exports:</strong> CSV/JSON from tool runs (impact analysis, bias metrics, risk scores)</span>
+                    </li>
+                    <li className="flex items-start gap-3 text-sm text-zinc-700">
+                      <div className="w-4 h-4 rounded-full bg-blue-500 mt-1 shrink-0" />
+                      <span><strong>Threshold Justification:</strong> Document your risk rating decision vs. the pre-set threshold</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <h4 className="font-bold text-amber-900 mb-2 text-sm flex items-center gap-2">
+                    <AlertTriangle size={16} /> Critical: Store ALL Evidence Artifacts
+                  </h4>
+                  <p className="text-sm text-amber-800">
+                    Save screenshots, logs, and exports to your <code className="bg-white px-2 py-1 rounded font-mono text-xs">07_evidence/</code> folder organized by mission ID. When you grade this work paper, reference the actual outputs you collected — not hypothetical findings.
+                  </p>
+                </div>
+
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h4 className="font-bold text-green-900 mb-2 text-sm flex items-center gap-2">
+                    <CheckCircle2 size={16} /> Next Steps
+                  </h4>
+                  <ol className="text-sm text-green-800 space-y-1 list-decimal list-inside">
+                    <li>Follow the 5-step recipe</li>
+                    <li>Capture all evidence artifacts</li>
+                    <li>Draft work paper {mission?.workPaperId} with evidence citations</li>
+                    <li>Self-score against the ISACA rubric</li>
+                    <li>Practice defense with NPC Pushback Simulator</li>
+                  </ol>
+                </div>
+
+                <button
+                  onClick={() => setShowEvidenceChecklist(false)}
+                  className="w-full px-4 py-3 bg-zinc-900 text-white rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors"
+                >
+                  Close & Start Execution
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
