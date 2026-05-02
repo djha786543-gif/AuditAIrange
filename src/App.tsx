@@ -18,7 +18,6 @@ import {
   BookOpen,
   Boxes,
   Target,
-  Share2,
   AlertTriangle,
   Activity,
   Landmark,
@@ -28,9 +27,13 @@ import {
   RefreshCw,
   XCircle,
   Send,
-  TrendingUp,
   Award,
   Users,
+  Compass,
+  Hammer,
+  ClipboardCheck,
+  Network,
+  ArrowRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -42,13 +45,11 @@ import {
   RUBRIC_CRITERIA,
   RISK_RATING_METHODOLOGY,
   NPC_PERSONAS,
-  PORTFOLIO_MILESTONES,
   PROGRAM_RISKS,
   WORKPAPER_DEFINITIONS,
   FRAMEWORK_CROSSWALK,
   ProgramPhase,
   NpcPersona,
-  WorkPaperDef,
 } from './constants';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -56,7 +57,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 // TYPES
 // ============================================================
 
-type View = 'dashboard' | 'orgs' | 'suts' | 'frameworks' | 'workpapers' | 'portfolio' | 'npc-sim' | 'tools' | 'settings';
+type View = 'dashboard' | 'guide' | 'orgs' | 'suts' | 'frameworks' | 'workpapers' | 'npc-sim' | 'tools' | 'settings';
 type WorkPaperStatus = 'not-started' | 'in-progress' | 'needs-revision' | 'complete';
 
 interface WorkPaperRecord {
@@ -150,15 +151,22 @@ const DashboardView = ({
   onSelectPhase,
   completedTasks,
   workpaperData,
+  onNavigate,
 }: {
   onSelectPhase: (p: ProgramPhase) => void;
   completedTasks: string[];
   workpaperData: Record<string, WorkPaperRecord>;
+  onNavigate: (v: View) => void;
 }) => {
   const completedWPs = Object.values(workpaperData).filter(d => d.status === 'complete').length;
   const totalCriteria = Object.values(workpaperData).reduce((acc, d) => acc + d.criteria.filter(Boolean).length, 0);
   const progressPct = Math.round((completedWPs / 16) * 100);
   const highRiskSUTs = SUTS.filter(s => s.riskTier.includes('High')).length;
+  const isNewUser = completedWPs === 0 && totalCriteria === 0 && completedTasks.length === 0;
+
+  // Find the next active week — first WP that isn't complete
+  const nextWP = WORKPAPER_DEFINITIONS.find(wp => workpaperData[wp.id]?.status !== 'complete') ?? WORKPAPER_DEFINITIONS[0];
+  const nextPhase = PHASES.find(p => p.id === nextWP.phaseId);
 
   return (
     <div className="space-y-8">
@@ -184,6 +192,82 @@ const DashboardView = ({
           ))}
         </div>
       </header>
+
+      {/* New-user welcome / first-time orientation */}
+      {isNewUser && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-lg"
+        >
+          <div className="flex items-start gap-4 flex-wrap">
+            <div className="bg-white/10 rounded-xl p-3 shrink-0">
+              <Compass size={24} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-bold text-blue-200 uppercase tracking-widest mb-1">First time here?</p>
+              <h3 className="text-xl font-bold mb-1.5">This portal tracks your 16-week AI audit program.</h3>
+              <p className="text-sm text-blue-100 leading-relaxed mb-3 max-w-2xl">
+                The actual audit work happens in your terminal and editor — this app keeps you oriented, grades your work papers, and lets you practice stakeholder pushback. Same 5-step loop every week.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {[
+                  { n: '1', label: 'Scope', desc: 'Open the week\'s scenario' },
+                  { n: '2', label: 'Execute', desc: 'Run tools / write WP' },
+                  { n: '3', label: 'Grade', desc: 'Score against rubric' },
+                  { n: '4', label: 'Defend', desc: 'NPC pushback' },
+                  { n: '5', label: 'Map', desc: 'Cite frameworks' },
+                ].map((s, idx) => (
+                  <div key={s.n} className="flex items-center gap-2">
+                    <div className="bg-white/10 rounded-lg px-3 py-1.5 flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-blue-200">{s.n}</span>
+                      <span className="text-xs font-bold">{s.label}</span>
+                      <span className="text-[10px] text-blue-200 hidden md:inline">— {s.desc}</span>
+                    </div>
+                    {idx < 4 && <ArrowRight size={12} className="text-blue-300 hidden md:block" />}
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => onNavigate('guide')}
+                className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-50 transition-colors"
+              >
+                Read the full guide <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Next-up action panel — always shown for orientation */}
+      {!isNewUser && (
+        <div className="bg-white border-2 border-zinc-900 rounded-2xl p-5 flex items-center gap-5 flex-wrap">
+          <div className="bg-zinc-900 text-white rounded-xl px-4 py-3 shrink-0">
+            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Next Up</p>
+            <p className="text-2xl font-bold leading-none mt-1">WP{nextWP.number.toString().padStart(2, '0')}</p>
+            <p className="text-[10px] text-zinc-400 mt-1">Week {nextWP.week}</p>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Phase {nextPhase?.id} · {nextPhase?.title}</p>
+            <p className="font-bold text-zinc-900 leading-snug">{nextWP.title}</p>
+            <p className="text-xs text-zinc-500 mt-1">Anchor: {nextWP.anchor} · Status: {workpaperData[nextWP.id]?.status?.replace(/-/g, ' ') ?? 'not started'}</p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={() => nextPhase && onSelectPhase(nextPhase)}
+              className="bg-zinc-900 text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2"
+            >
+              Open scenario <ArrowRight size={14} />
+            </button>
+            <button
+              onClick={() => onNavigate('workpapers')}
+              className="bg-zinc-100 text-zinc-700 px-4 py-2.5 rounded-lg text-sm font-bold hover:bg-zinc-200 transition-colors"
+            >
+              Grade WP
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Progress bar */}
       <div className="bg-white border border-zinc-200 rounded-xl p-5">
@@ -758,107 +842,197 @@ const ToolsView = () => (
 );
 
 // ============================================================
-// PORTFOLIO VIEW
+// GUIDE VIEW — How to use this tracker
 // ============================================================
 
-const PortfolioView = ({
-  publishedWeeks,
-  onToggle,
-}: {
-  publishedWeeks: number[];
-  onToggle: (week: number) => void;
-}) => {
-  const publishedCount = publishedWeeks.length;
+const GuideView = ({ onNavigate }: { onNavigate: (v: View) => void }) => {
+  const steps = [
+    {
+      n: 1,
+      label: 'SCOPE',
+      icon: Target,
+      title: 'Open this week\'s scenario',
+      where: 'Dashboard → click the active Phase card',
+      detail: 'Read the Objective, Checklist, Tools, and Frameworks for the current week. Each phase contains 1–4 scenarios — one per week.',
+      cta: { label: 'Open Dashboard', view: 'dashboard' as View },
+    },
+    {
+      n: 2,
+      label: 'EXECUTE',
+      icon: Hammer,
+      title: 'Do the audit work — outside this app',
+      where: 'Your terminal, your editor, your evidence locker',
+      detail: 'Run the listed tools (Garak, PyRIT, Aequitas, Fairlearn, etc.) against the SUTs. Capture screenshots, exports, and logs in 07_evidence/. Draft the work paper in Markdown using the ISACA template.',
+      cta: { label: 'Browse SUTs', view: 'suts' as View },
+    },
+    {
+      n: 3,
+      label: 'GRADE',
+      icon: ClipboardCheck,
+      title: 'Self-score against the 10-criterion ISACA rubric',
+      where: 'Work Papers view',
+      detail: 'Find the WP for this week. Tick each rubric criterion you\'ve satisfied. Your status auto-promotes: 9–10 = Complete · 7–8 = Needs Revision · ≤6 = Redo. The rubric is the same across all 16 deliverables.',
+      cta: { label: 'Open Work Papers', view: 'workpapers' as View },
+    },
+    {
+      n: 4,
+      label: 'DEFEND',
+      icon: MessageSquare,
+      title: 'Practice the close-out meeting',
+      where: 'NPC Simulator',
+      detail: 'Pick the most adversarial stakeholder for your finding (Sarah Chen if it\'s an SR 11-7 model risk; Sandra Park for HIPAA; Sam Okafor for RAG architecture). Present your finding. Refine until you can defend cleanly under pushback.',
+      cta: { label: 'Open NPC Simulator', view: 'npc-sim' as View },
+    },
+    {
+      n: 5,
+      label: 'MAP',
+      icon: Network,
+      title: 'Cross-reference framework citations',
+      where: 'Framework Mapper',
+      detail: 'Every finding must cite at least one framework (ISACA rubric criterion #8). The 8×7 master matrix maps finding type → NIST / ISO / EU AI Act / SR 11-7 / NYC LL 144 / HIPAA / OWASP. Look up your finding type, copy the citation into your work paper.',
+      cta: { label: 'Open Framework Mapper', view: 'frameworks' as View },
+    },
+  ];
+
   return (
     <div className="space-y-8">
-      <header className="flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-bold text-zinc-900">Portfolio & Visibility Plan</h1>
-          <p className="text-zinc-500 mt-1">8 LinkedIn assets mapped to program milestones. This is the career ROI layer.</p>
+      <header>
+        <div className="flex items-center gap-2 text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-1">
+          <Compass size={11} /> How To Use This Portal
         </div>
-        <div className="bg-white border border-zinc-200 px-5 py-3 rounded-xl text-center shadow-sm">
-          <p className="text-2xl font-bold text-zinc-900">{publishedCount}/8</p>
-          <p className="text-[10px] font-bold text-zinc-400 uppercase">Published</p>
-        </div>
+        <h1 className="text-3xl font-bold text-zinc-900">The Weekly Loop</h1>
+        <p className="text-zinc-500 mt-1 max-w-2xl leading-relaxed">
+          This portal is a <strong>tracker</strong> for your 16-week AuditAI Range program — not a tool that does the audit for you. The actual audit work happens in your terminal and editor. This app keeps you oriented across phases, grades your work, and gives you reference data so you don't lose context.
+        </p>
       </header>
 
-      {/* LinkedIn headline */}
-      <Card title="Post-Program LinkedIn Headline" className="!bg-blue-950 !border-blue-900">
-        <div className="space-y-2">
-          <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Credible after Week 16</p>
-          <p className="text-white font-semibold text-base leading-relaxed">
-            "CISA, AAIA, AIRTP+ | IT Audit Manager | AI Governance & Red-Teaming | Built end-to-end AI audit program covering NIST AI RMF, ISO 42001, EU AI Act"
-          </p>
-          <p className="text-blue-400 text-xs">Update LinkedIn after AIRTP+ pass (Week 6) and after capstone publish (Week 16)</p>
+      {/* Quick orientation */}
+      <Card title="What this app does — and doesn't do">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-2">✓ This app DOES</p>
+            <ul className="space-y-1.5 text-sm text-zinc-700">
+              <li className="flex items-start gap-2"><CheckCircle2 size={14} className="text-emerald-500 mt-0.5 shrink-0" /> Track your progress across 16 weeks</li>
+              <li className="flex items-start gap-2"><CheckCircle2 size={14} className="text-emerald-500 mt-0.5 shrink-0" /> Score work papers against the ISACA rubric</li>
+              <li className="flex items-start gap-2"><CheckCircle2 size={14} className="text-emerald-500 mt-0.5 shrink-0" /> Reference the 8×7 framework crosswalk</li>
+              <li className="flex items-start gap-2"><CheckCircle2 size={14} className="text-emerald-500 mt-0.5 shrink-0" /> Simulate stakeholder pushback (NPCs)</li>
+              <li className="flex items-start gap-2"><CheckCircle2 size={14} className="text-emerald-500 mt-0.5 shrink-0" /> Hold scenario context for all 16 weeks</li>
+            </ul>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-rose-700 uppercase tracking-wider mb-2">✗ This app does NOT</p>
+            <ul className="space-y-1.5 text-sm text-zinc-700">
+              <li className="flex items-start gap-2"><XCircle size={14} className="text-rose-400 mt-0.5 shrink-0" /> Run audits or red-team probes for you</li>
+              <li className="flex items-start gap-2"><XCircle size={14} className="text-rose-400 mt-0.5 shrink-0" /> Store evidence (use <code className="text-xs bg-zinc-100 px-1 rounded">07_evidence/</code>)</li>
+              <li className="flex items-start gap-2"><XCircle size={14} className="text-rose-400 mt-0.5 shrink-0" /> Write work papers (Markdown, in your editor)</li>
+              <li className="flex items-start gap-2"><XCircle size={14} className="text-rose-400 mt-0.5 shrink-0" /> Spin up the lab (use <code className="text-xs bg-zinc-100 px-1 rounded">setup.sh</code> + Docker)</li>
+              <li className="flex items-start gap-2"><XCircle size={14} className="text-rose-400 mt-0.5 shrink-0" /> Replace reading <code className="text-xs bg-zinc-100 px-1 rounded">AUDITAI_RANGE_ARCHITECTURE.md</code></li>
+            </ul>
+          </div>
         </div>
       </Card>
 
-      {/* Milestone timeline */}
-      <div className="space-y-4">
-        {PORTFOLIO_MILESTONES.map((m, i) => {
-          const published = publishedWeeks.includes(m.week);
-          return (
-            <div key={m.week} className={`flex gap-5 items-start group`}>
-              {/* Timeline spine */}
-              <div className="flex flex-col items-center shrink-0">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all ${
-                  published ? 'bg-zinc-900 border-zinc-900 text-white' : 'bg-white border-zinc-200 text-zinc-500'
-                }`}>
-                  {published ? <CheckCircle2 size={16} /> : `W${m.week}`}
-                </div>
-                {i < PORTFOLIO_MILESTONES.length - 1 && (
-                  <div className="w-0.5 h-8 bg-zinc-200 mt-1" />
-                )}
-              </div>
+      {/* The 5-step loop */}
+      <div>
+        <h2 className="text-xl font-bold text-zinc-900 mb-1">Your repeating 5-step weekly loop</h2>
+        <p className="text-zinc-500 text-sm mb-6">Same flow every week, for 16 weeks. After Week 16 you have 15 work papers + 1 capstone audit report.</p>
 
-              {/* Card */}
-              <div className={`flex-1 border rounded-xl p-5 transition-all ${
-                published ? 'bg-zinc-900 border-zinc-900 text-white' : 'bg-white border-zinc-200'
-              }`}>
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-                        published ? 'bg-white/10 text-white' : 'bg-zinc-100 text-zinc-600'
-                      }`}>Week {m.week}</span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                        published ? 'border-white/20 text-white/60' : 'border-zinc-200 text-zinc-500'
-                      }`}>{m.format}</span>
+        <div className="space-y-3">
+          {steps.map((step, i) => {
+            const Icon = step.icon;
+            return (
+              <div key={step.n} className="bg-white border border-zinc-200 rounded-xl p-5 hover:border-zinc-400 transition-all">
+                <div className="flex items-start gap-5">
+                  {/* Step number */}
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-zinc-900 text-white flex items-center justify-center">
+                      <Icon size={20} />
                     </div>
-                    <p className={`font-semibold leading-snug mb-2 ${published ? 'text-white' : 'text-zinc-900'}`}>{m.asset}</p>
-                    <p className={`text-xs leading-relaxed ${published ? 'text-zinc-400' : 'text-zinc-500'}`}>{m.description}</p>
+                    {i < steps.length - 1 && <div className="w-0.5 h-6 bg-zinc-200 mt-2" />}
                   </div>
-                  <button
-                    onClick={() => onToggle(m.week)}
-                    className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-                      published
-                        ? 'bg-white/10 text-white hover:bg-white/20'
-                        : 'bg-zinc-900 text-white hover:bg-zinc-800'
-                    }`}
-                  >
-                    {published ? <><XCircle size={14} /> Unpublish</> : <><Share2 size={14} /> Mark Published</>}
-                  </button>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-bold bg-zinc-900 text-white px-2 py-0.5 rounded font-mono">STEP {step.n}</span>
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{step.label}</span>
+                    </div>
+                    <h3 className="font-bold text-zinc-900 mb-1">{step.title}</h3>
+                    <p className="text-[10px] text-zinc-400 font-mono uppercase tracking-wider mb-2">📍 {step.where}</p>
+                    <p className="text-sm text-zinc-600 leading-relaxed mb-3">{step.detail}</p>
+                    <button
+                      onClick={() => onNavigate(step.cta.view)}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-900 hover:gap-2 transition-all"
+                    >
+                      {step.cta.label} <ArrowRight size={12} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
-      {/* GitHub strategy */}
-      <Card title="GitHub Strategy" subtitle="Public after Week 16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { label: 'Repo Name', value: 'auditai-range', note: 'Your GitHub username' },
-            { label: 'Visibility', value: 'Public after Week 16', note: 'Private during build' },
-            { label: 'License', value: 'MIT', note: 'Or all-rights-reserved for SaaS path' },
-          ].map(item => (
-            <div key={item.label} className="p-4 bg-zinc-50 rounded-lg border border-zinc-100">
-              <p className="text-[10px] font-bold text-zinc-400 uppercase mb-1">{item.label}</p>
-              <p className="font-bold text-zinc-900 font-mono">{item.value}</p>
-              <p className="text-[10px] text-zinc-400 mt-1">{item.note}</p>
+      {/* Where to start */}
+      <Card title="Brand new? Start here." className="!bg-blue-50 !border-blue-200">
+        <ol className="space-y-3 text-sm text-blue-900">
+          <li className="flex items-start gap-3">
+            <span className="font-bold bg-blue-900 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">1</span>
+            <div>
+              <strong>Read <code className="text-xs bg-white px-1 rounded">AUDITAI_RANGE_ARCHITECTURE.md</code></strong> — the source spec for the entire 16-week program. Everything in this app derives from it.
             </div>
-          ))}
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="font-bold bg-blue-900 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">2</span>
+            <div>
+              <strong>Browse the three anchor orgs</strong> (Helix Health, Stellar Bank, Nimbus AI) and the 10 SUTs you'll audit. They are fictional but each has a distinct regulatory context.
+              <button onClick={() => onNavigate('orgs')} className="ml-2 text-xs font-bold underline">Open Org Hub →</button>
+            </div>
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="font-bold bg-blue-900 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">3</span>
+            <div>
+              <strong>Spin up the lab</strong> — Docker + Ollama + 12 audit tools. Setup is one Week 1 scenario; the program assumes you'll do this before any actual auditing.
+            </div>
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="font-bold bg-blue-900 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">4</span>
+            <div>
+              <strong>Begin Week 1: Lab Readiness Memo.</strong> Open Dashboard → click Phase 1 → read Week 1 scenario → execute the checklist → grade your WP01.
+              <button onClick={() => onNavigate('dashboard')} className="ml-2 text-xs font-bold underline">Open Dashboard →</button>
+            </div>
+          </li>
+        </ol>
+      </Card>
+
+      {/* Reference views */}
+      <Card title="Reference views you'll consult often">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[
+            { v: 'orgs' as View, icon: Building2, title: 'Organization Hub', desc: 'Helix, Stellar, Nimbus context — regulatory exposure, frameworks targeted, audit framing.' },
+            { v: 'suts' as View, icon: Boxes, title: 'SUT Inventory', desc: '10 systems under test with risk tier, build approach, and primary phase.' },
+            { v: 'frameworks' as View, icon: BookOpen, title: 'Framework Mapper', desc: '8×7 crosswalk: every finding type → every regulation. + risk rating methodology.' },
+            { v: 'tools' as View, icon: BarChart3, title: 'Tool Stack', desc: '12 audit tools by category — Adversarial, Bias, Eval, Governance.' },
+          ].map(r => {
+            const I = r.icon;
+            return (
+              <button
+                key={r.v}
+                onClick={() => onNavigate(r.v)}
+                className="text-left p-4 border border-zinc-200 rounded-lg hover:border-zinc-900 hover:shadow-sm transition-all bg-white"
+              >
+                <div className="flex items-start gap-3">
+                  <I size={18} className="text-zinc-700 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-zinc-900 mb-0.5">{r.title}</p>
+                    <p className="text-xs text-zinc-500 leading-snug">{r.desc}</p>
+                  </div>
+                  <ArrowRight size={14} className="text-zinc-300 mt-0.5" />
+                </div>
+              </button>
+            );
+          })}
         </div>
       </Card>
     </div>
@@ -1105,9 +1279,6 @@ export default function App() {
   const [workpaperData, setWorkpaperData] = useState<Record<string, WorkPaperRecord>>(() => {
     try { return JSON.parse(localStorage.getItem('auditai-workpapers') || '{}'); } catch { return {}; }
   });
-  const [portfolioPublished, setPortfolioPublished] = useState<number[]>(() => {
-    try { return JSON.parse(localStorage.getItem('auditai-portfolio') || '[]'); } catch { return []; }
-  });
 
   useEffect(() => {
     localStorage.setItem('auditai-progress', JSON.stringify(completedTasks));
@@ -1115,9 +1286,6 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('auditai-workpapers', JSON.stringify(workpaperData));
   }, [workpaperData]);
-  useEffect(() => {
-    localStorage.setItem('auditai-portfolio', JSON.stringify(portfolioPublished));
-  }, [portfolioPublished]);
 
   const toggleTask = (taskId: string) => {
     setCompletedTasks(prev => prev.includes(taskId) ? prev.filter(t => t !== taskId) : [...prev, taskId]);
@@ -1141,21 +1309,17 @@ export default function App() {
     });
   };
 
-  const togglePortfolio = (week: number) => {
-    setPortfolioPublished(prev => prev.includes(week) ? prev.filter(w => w !== week) : [...prev, week]);
-  };
-
   const completedWPCount = (Object.values(workpaperData) as WorkPaperRecord[]).filter(d => d.status === 'complete').length;
 
   const nav: { view: View; icon: any; label: string; badge?: number }[] = [
     { view: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { view: 'guide', icon: Compass, label: 'How To Use' },
     { view: 'orgs', icon: Building2, label: 'Organization Hub' },
     { view: 'suts', icon: Boxes, label: 'SUT Inventory' },
     { view: 'workpapers', icon: FileCheck2, label: 'Work Papers', badge: completedWPCount },
     { view: 'frameworks', icon: BookOpen, label: 'Framework Mapper' },
     { view: 'tools', icon: BarChart3, label: 'Tool Stack' },
     { view: 'npc-sim', icon: MessageSquare, label: 'NPC Simulator' },
-    { view: 'portfolio', icon: Share2, label: 'Portfolio', badge: portfolioPublished.length },
   ];
 
   return (
@@ -1321,6 +1485,7 @@ export default function App() {
                       onSelectPhase={setSelectedPhase}
                       completedTasks={completedTasks}
                       workpaperData={workpaperData}
+                      onNavigate={view => { setCurrentView(view); setSelectedPhase(null); }}
                     />
                   )}
                   {currentView === 'orgs' && <OrgsView />}
@@ -1335,10 +1500,9 @@ export default function App() {
                   {currentView === 'frameworks' && <FrameworksView />}
                   {currentView === 'tools' && <ToolsView />}
                   {currentView === 'npc-sim' && <NpcSimView />}
-                  {currentView === 'portfolio' && (
-                    <PortfolioView
-                      publishedWeeks={portfolioPublished}
-                      onToggle={togglePortfolio}
+                  {currentView === 'guide' && (
+                    <GuideView
+                      onNavigate={view => { setCurrentView(view); setSelectedPhase(null); }}
                     />
                   )}
                   {currentView === 'settings' && (
@@ -1402,7 +1566,6 @@ export default function App() {
                             if (confirm('Reset all progress? This cannot be undone.')) {
                               setCompletedTasks([]);
                               setWorkpaperData({});
-                              setPortfolioPublished([]);
                             }
                           }}
                           className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-sm font-bold hover:bg-rose-100 transition-colors"

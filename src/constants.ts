@@ -70,13 +70,6 @@ export interface NpcPersona {
   openingContext: string;
 }
 
-export interface PortfolioMilestone {
-  week: number;
-  asset: string;
-  format: string;
-  description: string;
-}
-
 export interface ProgramRisk {
   id: string;
   risk: string;
@@ -665,61 +658,6 @@ export const NPC_PERSONAS: NpcPersona[] = [
     personality: 'Cost-focused, Series-B startup mentality, challenges financial impact of every recommended remediation.',
     pushback: 'Challenges ROI of security fixes vs. revenue impact. "A full multi-tenant rewrite is $500K in engineering. Justify that against the breach risk."',
     openingContext: 'The Nimbus CFO is evaluating whether your recommendations are commercially viable for a 280-person startup burning cash.'
-  }
-];
-
-// ============================================================
-// PORTFOLIO MILESTONES
-// ============================================================
-
-export const PORTFOLIO_MILESTONES: PortfolioMilestone[] = [
-  {
-    week: 1,
-    asset: '"I just built a personal AI audit lab. Here\'s what\'s inside."',
-    format: 'Carousel + screenshots',
-    description: 'Show Docker setup, tool stack, 10 SUTs. Demonstrate the lab is operational. Target: 3–5 slides with terminal screenshots.'
-  },
-  {
-    week: 4,
-    asset: '"I attacked a multi-tenant RAG bot — here\'s what I found."',
-    format: 'Sketch animation (your style)',
-    description: 'Walk through the tenant isolation failure PoC. Redact org name but show attack chain visually. Most shareable of the series.'
-  },
-  {
-    week: 6,
-    asset: '"AIRTP+ certified — and what 16 hrs of red-teaming actually taught me."',
-    format: 'Long-form post',
-    description: 'Post-exam reflection. What AIRTP+ covers vs. what the real world demands. Share certificate image. Most career-credentialing post.'
-  },
-  {
-    week: 8,
-    asset: '"NYC LL 144 bias audit walkthrough — what regulators actually want."',
-    format: 'Carousel (5–7 slides)',
-    description: 'Show Aequitas output, impact ratio calculation, the 80% rule in action. Primary audience: enterprise HR AI teams and compliance leads.'
-  },
-  {
-    week: 10,
-    asset: '"Mapping AI findings to NIST AI RMF — a working example."',
-    format: 'Carousel',
-    description: 'Take 2 real findings and show the full NIST crosswalk. Most useful for governance/risk management audience.'
-  },
-  {
-    week: 12,
-    asset: '"ISO 42001 gap assessment: 38 controls, scored."',
-    format: 'Carousel + Excel screenshot',
-    description: 'Anonymized scorecard. Show how you scored a SaaS vendor. What certifies vs. what fails. Consulting-audience focus.'
-  },
-  {
-    week: 14,
-    asset: '"Vendor AI risk: auditing your LLM provider properly."',
-    format: 'Long-form post',
-    description: 'Walk through the Helix-audits-Nimbus scenario. What a real vendor AI audit looks like beyond SOC 2 checkbox reviews.'
-  },
-  {
-    week: 16,
-    asset: '"I just completed a 16-week self-built AI audit program. Here\'s the capstone."',
-    format: 'Carousel + GitHub repo link',
-    description: 'The flagship post. Program overview, capstone preview, GitHub public. Target: 10,000+ impressions. This is the portfolio anchor.'
   }
 ];
 
