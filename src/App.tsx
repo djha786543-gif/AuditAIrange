@@ -572,12 +572,12 @@ const MissionModeView = ({
           Back to Missions
         </button>
         <a
-          href={`https://github.com/djha786543-gif/AuditAIrange/tree/main/07_evidence`}
+          href="https://github.com/djha786543-gif/AuditAIrange"
           target="_blank"
           rel="noopener noreferrer"
           className="px-6 py-2.5 bg-zinc-900 text-white rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2"
         >
-          View Evidence Folder <ExternalLink size={14} />
+          View Evidence Docs <ExternalLink size={14} />
         </a>
       </div>
     </div>
