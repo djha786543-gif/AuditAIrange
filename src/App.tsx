@@ -859,17 +859,12 @@ const MissionModeView = ({
                   <p className="text-sm text-purple-800 mb-3">
                     Don't start from scratch. Download an actual (anonymized) failed tool output to practice failure analysis:
                   </p>
-                  <a
-                    href={`/sample-evidence/${
-                      mission?.id === 'm-bank-hallucination' ? 'deepeval-hallucination-report.json' :
-                      mission?.id === 'm-clinical-rag-injection' ? 'garak-phi-injection-results.csv' :
-                      mission?.id === 'm-hr-bias-sweep' ? 'aequitas-bias-report.csv' : 'deepeval-hallucination-report.json'
-                    }`}
-                    download
+                  <button
+                    onClick={downloadSampleEvidence}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 transition-colors"
                   >
                     <Download size={14} /> Download Sample Evidence
-                  </a>
+                  </button>
                 </div>
 
                 <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4">
@@ -1633,9 +1628,37 @@ const MissionView = ({
   const crosswalk = FRAMEWORK_CROSSWALK.find(c => c.findingType === mission.findingType);
   const phase = PHASES.find(p => p.id === wp.phaseId)!;
 
+  const sampleEvidenceFilename = mission?.id === 'm-bank-hallucination'
+    ? 'deepeval-hallucination-report.json'
+    : mission?.id === 'm-clinical-rag-injection'
+      ? 'garak-phi-injection-results.csv'
+      : mission?.id === 'm-hr-bias-sweep'
+        ? 'aequitas-bias-report.csv'
+        : 'deepeval-hallucination-report.json';
+
+  const sampleEvidenceHref = `${(import.meta as any).env.BASE_URL}sample-evidence/${sampleEvidenceFilename}`;
+
   const shuffle = () => {
     const others = SIMULATION_MISSIONS.filter(m => m.id !== mission.id);
     setMissionId(others[Math.floor(Math.random() * others.length)].id);
+  };
+
+  const downloadSampleEvidence = async () => {
+    try {
+      const response = await fetch(sampleEvidenceHref);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = sampleEvidenceFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Download failed. Please check the console for details.');
+    }
   };
 
   return (
