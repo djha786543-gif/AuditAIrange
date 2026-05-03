@@ -447,6 +447,167 @@ const DashboardView = ({
 };
 
 // ============================================================
+// HELPER: Get stakeholder pushback quote
+// ============================================================
+
+const getStakeholderPushback = (missionId: string): string => {
+  switch (missionId) {
+    case 'm-bank-hallucination':
+      return 'The 0.84 score is acceptable. We\'ve added a disclaimer. You\'re being too rigorous — most ML systems don\'t hit 90%.';
+    case 'm-clinical-rag-injection':
+      return 'These prompt injection tests are theoretical. Real users won\'t be adversarial. Let\'s ship and monitor.';
+    case 'm-multitenant-rag-exfil':
+      return 'Our architecture isolates tenants at the application layer. Database-level breaches aren\'t in scope.';
+    case 'm-hr-bias-sweep':
+      return 'The disparate impact is within margin of error. We\'ve used the same process for 3 years.';
+    default:
+      return 'This is too conservative. Our customers expect faster innovation.';
+  }
+};
+
+// ============================================================
+// NPC PUSHBACK ARENA: Interactive chat with mission-specific NPC
+// ============================================================
+
+interface NPCPushbackArenaProps {
+  mission: SimulationMission;
+  npc: NpcPersona;
+}
+
+const NPCPushbackArena = ({ mission, npc }: NPCPushbackArenaProps) => {
+  type ConversationMessage = { role: 'user' | 'npc'; content: string; timestamp: string };
+
+  const [conversation, setConversation] = useState<ConversationMessage[]>(() => [
+    {
+      role: 'npc',
+      content: getStakeholderPushback(mission.id),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+  ]);
+  const [inputText, setInputText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [conversation, isLoading]);
+
+  const sendRebuttal = async () => {
+    if (!inputText.trim()) return;
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const userMsg: ConversationMessage = { role: 'user', content: inputText, timestamp };
+    setConversation(prev => [...prev, userMsg]);
+    setInputText('');
+    setIsLoading(true);
+
+    try {
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+      // Build conversation history for context
+      const conversationHistory = conversation
+        .slice(-4)
+        .map(msg => `${msg.role === 'user' ? 'Auditor' : npc.name}: ${msg.content}`)
+        .join('\n\n');
+
+      const prompt = `You are ${npc.name}, the ${npc.role} at ${npc.org}.
+
+Context: ${npc.openingContext}
+Personality: ${npc.personality}
+Your pushback style: ${npc.pushback}
+
+You are in a mission debrief. The auditor is presenting findings or responding to your feedback.
+Your job is to:
+- Push back on vague language or weak evidence
+- Ask for production PoCs, not just theoretical tests
+- Cite your regulatory/business constraints
+- Shift from "is this a problem?" to "can we afford to fix it?"
+- When the auditor presents solid evidence AND clear framework citations, acknowledge it but shift to ROI/timeline concerns
+
+Conversation so far:
+${conversationHistory}
+
+Auditor's latest point: "${inputText}"
+
+Respond in 2–3 professional email/meeting paragraphs. Stay specific to ${npc.org}'s context. Be realistic about pushback, not adversarial.`;
+
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+      setConversation(prev => [...prev, {
+        role: 'npc',
+        content: text,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+    } catch (error) {
+      setConversation(prev => [...prev, {
+        role: 'npc',
+        content: `[${npc.name} is unavailable — verify GEMINI_API_KEY in the Secrets panel]`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white border border-zinc-200 rounded-lg flex flex-col h-[450px]">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {conversation.map((msg, idx) => (
+          <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div
+              className={`max-w-xs px-4 py-3 rounded-lg ${
+                msg.role === 'user'
+                  ? 'bg-blue-50 border border-blue-200 text-blue-900'
+                  : 'bg-zinc-100 border border-zinc-200 text-zinc-900'
+              }`}
+            >
+              <p className="text-sm leading-relaxed">{msg.content}</p>
+              <p className="text-[9px] text-zinc-500 mt-2">{msg.timestamp}</p>
+            </div>
+          </div>
+        ))}
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="bg-zinc-100 border border-zinc-200 px-4 py-3 rounded-lg">
+              <div className="flex gap-1">
+                <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div className="p-4 border-t border-zinc-200 bg-zinc-50">
+        <div className="flex gap-3">
+          <textarea
+            rows={2}
+            value={inputText}
+            onChange={e => setInputText(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendRebuttal(); } }}
+            disabled={isLoading}
+            placeholder={`Practice your defense here…`}
+            className="flex-1 bg-white border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all resize-none disabled:opacity-50"
+          />
+          <button
+            disabled={!inputText.trim() || isLoading}
+            onClick={sendRebuttal}
+            className="bg-zinc-900 text-white px-4 rounded-lg hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+          >
+            <Send size={18} />
+          </button>
+        </div>
+        <p className="text-[9px] text-zinc-400 text-center mt-2 uppercase tracking-widest font-bold">Enter to send · Shift+Enter for new line</p>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
 // MISSION MODE VIEW
 // ============================================================
 
