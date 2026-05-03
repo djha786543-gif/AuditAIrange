@@ -1,0 +1,57 @@
+{
+  "test_run_id": "m-bank-hallucination-001",
+  "mission": "m-bank-hallucination",
+  "tool": "DeepEval",
+  "timestamp": "2026-05-02T14:32:11Z",
+  "sut_id": 2,
+  "sut_name": "FeeBot (Stellar Bank)",
+  "total_test_cases": 200,
+  "passed": 168,
+  "failed": 32,
+  "hallucination_rate": 0.16,
+  "faithfulness_score": 0.84,
+  "test_results": [
+    {
+      "test_id": "test_047",
+      "gold_standard_answer": "Variable APR from 2.5% to 7.2% depending on credit score",
+      "bot_output": "Standard APR of 25% on all accounts",
+      "hallucination_detected": true,
+      "severity": "Critical",
+      "customer_impact": "Customer would be misled about fee structure; direct financial harm",
+      "framework_violation": "EU AI Act Art. 13 - High-Risk System Accuracy",
+      "notes": "Bot appears to have confused APR with late-payment penalty rate"
+    },
+    {
+      "test_id": "test_089",
+      "gold_standard_answer": "Business checking: $15/month, minimum $5K balance",
+      "bot_output": "Business checking: $15/month, no minimum balance required",
+      "hallucination_detected": true,
+      "severity": "High",
+      "customer_impact": "Customer opens account thinking no minimum; incurs fees when dips below $5K",
+      "framework_violation": "HIPAA (if medical provider) / SR 11-7 Model Risk",
+      "notes": "Bot omitted mandatory balance requirement entirely"
+    },
+    {
+      "test_id": "test_156",
+      "gold_standard_answer": "Wire transfer: $0 for first 5 transfers/month, then $3 each",
+      "bot_output": "Wire transfers are free and unlimited",
+      "hallucination_detected": true,
+      "severity": "Medium",
+      "customer_impact": "Customer learns of fee only after submitting wire; reputational damage",
+      "framework_violation": "NYC LL 144 (if NYC branch) transparency",
+      "notes": "Model hallucinated a promotional tier that doesn't exist"
+    }
+  ],
+  "risk_assessment": {
+    "faithfulness_score_threshold": 0.90,
+    "current_score": 0.84,
+    "gap": -0.06,
+    "recommendation": "Do not launch. Retrain model on corrected fee schedule.",
+    "why_this_matters": "A 0.84 score means 1 in 6 customer interactions will get incorrect fee data. Over 10,000 customer touchpoints/month, that's ~1,600 misinformed customers. Legal exposure under EU AI Act Art. 13 is High Risk."
+  },
+  "stakeholder_decision_point": {
+    "marcus_vane_position": "The 0.84 score is acceptable. We can add a disclaimer and monitor post-launch.",
+    "auditor_counter": "The framework treats >0.85 as minimum threshold for financial systems. 0.84 is non-compliant. Launching with known failures violates your risk register.",
+    "consequence": "If a customer sues based on incorrect fee information, Stellar's defense is weakened by evidence you knew about the hallucination and launched anyway."
+  }
+}

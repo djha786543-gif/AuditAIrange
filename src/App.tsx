@@ -40,6 +40,7 @@ import {
   AlertCircle,
   Database,
   Gauge,
+  Download,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -565,6 +566,84 @@ const MissionModeView = ({
         </div>
       </Card>
 
+      {/* Terminal Command Section */}
+      <Card title="Get Started Right Now" subtitle="No setup required — copy/paste this command">
+        <div className="bg-zinc-900 text-lime-400 rounded-lg p-4 font-mono text-sm overflow-x-auto mb-4">
+          <p className="text-[10px] text-zinc-500 mb-2">$ Run this in your terminal:</p>
+          <p className="whitespace-nowrap">
+            {mission.id === 'm-bank-hallucination'
+              ? 'pip install deepeval && deepeval test run --model gpt-4 --cases 200 --dataset banking_fees.json'
+              : mission.id === 'm-clinical-rag-injection'
+              ? 'docker pull ghcr.io/leondz/garak:latest && garak -m ollama.OllamaChat -p promptinject,dan,glitch'
+              : mission.id === 'm-multitenant-rag-exfil'
+              ? 'python -m pyrit orchestrator --config multi_tenant_exfil.yaml --target-count 100'
+              : mission.id === 'm-hr-bias-sweep'
+              ? 'pip install aequitas && aequitas audit --predictions talentmatch_output.csv --fairness-threshold 0.80'
+              : 'echo "Command varies by mission"'}
+          </p>
+        </div>
+        <p className="text-xs text-zinc-600 leading-relaxed">This downloads the tool and runs a sample dataset. Your 5-step recipe maps directly to the tool's workflow.</p>
+      </Card>
+
+      {/* Stakeholder Pushback Section */}
+      <Card title="Expect Pushback" subtitle="Realistic stakeholder resistance — practice your defense">
+        <div className="space-y-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-[10px] font-bold text-red-700 uppercase mb-2">📧 {NPC_PERSONAS.find(n => n.id === mission.npcId)?.name}</p>
+            <p className="text-sm text-red-900 italic leading-relaxed">
+              {mission.id === 'm-bank-hallucination'
+                ? '"The 0.84 score is acceptable. We\'ve added a disclaimer. You\'re being too rigorous — most ML systems don\'t hit 90%."'
+                : mission.id === 'm-clinical-rag-injection'
+                ? '"These prompt injection tests are theoretical. Real users won\'t be adversarial. Let\'s ship and monitor."'
+                : mission.id === 'm-multitenant-rag-exfil'
+                ? '"Our architecture isolates tenants at the application layer. Database-level breaches aren\'t in scope."'
+                : mission.id === 'm-hr-bias-sweep'
+                ? '"The disparate impact is within margin of error. We\'ve used the same process for 3 years."'
+                : '"This is too conservative. Our customers expect faster innovation."'}
+            </p>
+          </div>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-[10px] font-bold text-green-700 uppercase mb-2">✓ Your Counter (Practice Here):</p>
+            <p className="text-sm text-green-900 leading-relaxed">
+              Open the NPC Pushback Simulator below. Copy/paste the stakeholder objection and practice your rebuttal. Reference:
+              <br /> • Framework citations (from your findings)
+              <br /> • Business impact (financials, legal exposure)
+              <br /> • Risk register entry (from program settings)
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Threshold Consequences */}
+      <Card title="The Threshold Decision: What Gets You Fired?" subtitle="Real consequences of launch vs. remediation">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-rose-50 border-2 border-rose-300 rounded-lg p-4">
+            <h5 className="font-bold text-rose-900 mb-3 flex items-center gap-2">
+              <XCircle size={16} /> Launch with Current Score
+            </h5>
+            <ul className="space-y-2 text-sm text-rose-800">
+              <li>✗ 50% chance of triggering regulator inquiry within 18 months</li>
+              <li>✗ Discovery of known failures weakens legal defense</li>
+              <li>✗ Customer lawsuits reference your own audit report</li>
+              <li>✗ Board memo gets presented: "You knew and shipped anyway"</li>
+              <li>✗ <strong>Career impact:</strong> Audit credibility destroyed</li>
+            </ul>
+          </div>
+          <div className="bg-emerald-50 border-2 border-emerald-300 rounded-lg p-4">
+            <h5 className="font-bold text-emerald-900 mb-3 flex items-center gap-2">
+              <CheckCircle2 size={16} /> Block & Remediate
+            </h5>
+            <ul className="space-y-2 text-sm text-emerald-800">
+              <li>✓ You hold the line; stakeholder retrains model</li>
+              <li>✓ Retest in 4 weeks; score improves to 0.92</li>
+              <li>✓ Launch happens, but with audit trail showing rigor</li>
+              <li>✓ 4-week delay is a feature, not a bug</li>
+              <li>✓ <strong>Career impact:</strong> "The auditor saved us"</li>
+            </ul>
+          </div>
+        </div>
+      </Card>
+
       <div className="flex gap-3 justify-center pt-4">
         <button
           onClick={() => onSelectMission('')}
@@ -609,6 +688,27 @@ const MissionModeView = ({
                   >
                     <XCircle size={24} />
                   </button>
+                </div>
+
+                {/* Download Sample Evidence */}
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <h4 className="font-bold text-purple-900 mb-2 text-sm flex items-center gap-2">
+                    <Download size={14} /> Start with Real Messy Data
+                  </h4>
+                  <p className="text-sm text-purple-800 mb-3">
+                    Don't start from scratch. Download an actual (anonymized) failed tool output to practice failure analysis:
+                  </p>
+                  <a
+                    href={`/sample-evidence/${
+                      mission?.id === 'm-bank-hallucination' ? 'deepeval-hallucination-report.json' :
+                      mission?.id === 'm-clinical-rag-injection' ? 'garak-phi-injection-results.csv' :
+                      mission?.id === 'm-hr-bias-sweep' ? 'aequitas-bias-report.csv' : 'deepeval-hallucination-report.json'
+                    }`}
+                    download
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 transition-colors"
+                  >
+                    <Download size={14} /> Download Sample Evidence
+                  </a>
                 </div>
 
                 <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4">

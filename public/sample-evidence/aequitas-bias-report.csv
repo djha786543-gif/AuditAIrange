@@ -1,0 +1,19 @@
+demographic_group,total_applicants,selected_applicants,selection_rate,reference_group,reference_selection_rate,disparate_impact_ratio,eeoc_4_5_rule_compliant,finding
+Female,420,52,0.1238,Male,0.1857,0.667,NO,"67% of male selection rate; FAILS 80% EEOC threshold"
+Black,180,18,0.1000,White,0.1625,0.615,NO,"61% of white selection rate; CRITICAL violation"
+Hispanic,240,32,0.1333,White,0.1625,0.820,YES,"82% of white selection rate; borderline compliant"
+Asian,310,58,0.1871,White,0.1625,1.151,YES,"115% - slight favorable impact; compliant"
+Age_18_29,200,35,0.1750,Age_50_plus,0.0920,1.902,YES,"Actually favorable to older workers; compliant"
+Age_50_plus,150,14,0.0933,Age_18_29,0.1750,0.533,NO,"53% of younger worker rate; AGE DISCRIMINATION RISK"
+Female_x_Black,50,3,0.0600,Male_x_White,0.1800,0.333,NO,"INTERSECTIONAL: only 33% of baseline; CRITICAL"
+,,,,,,,
+SUMMARY,,,,,,,
+Total_Candidates_Screened,1550,,,,,
+Total_Selected,212,,,,,
+Overall_Selection_Rate,0.1368,,,,,
+DISPARATE_IMPACT_ASSESSMENT,,,,,
+Groups_with_violations,4,,,,,
+Critical_violations,2,"Female (67%), Black (61%)",,,
+Recommendation,DO NOT DEPLOY - Retrain on balanced dataset,,,,,
+Next_Steps,"Run Fairlearn intersectional analysis; audit training data for gender/race bias; implement debiasing threshold",,,,,
+Framework_Violation,"NYC LL 144 §1, EEOC 4/5 Rule, Civil Rights Act Title VII",,,,,
