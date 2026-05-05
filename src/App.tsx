@@ -288,64 +288,135 @@ const TaskQueueView = ({
     }, new Map<string, typeof TASKS>())
   );
 
+  const selectedTask = selectedTaskId ? tasks.find(t => t.id === selectedTaskId) : null;
+  const isSelectedCompleted = selectedTask && completedTasks.includes(selectedTask.id);
+
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-20">
+      <div className="lg:col-span-1 space-y-6">
+        <header className="lg:sticky lg:top-8">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">Task queue</p>
           <h1 className="text-3xl font-bold text-zinc-900 mt-1">Complete tasks at your own pace.</h1>
+          <p className="text-sm text-zinc-500 mt-3">Tap a task to see full details.</p>
+        </header>
+        <div className="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
+          {groups.map(([workPaperId, groupTasks]) => {
+            const completedCount = groupTasks.filter(task => completedTasks.includes(task.id)).length;
+            return (
+              <Card
+                key={workPaperId}
+                title={formatWpTitle(workPaperId)}
+                subtitle={`${completedCount}/${groupTasks.length} complete`}
+                className="!p-3"
+              >
+                <div className="space-y-2">
+                  {groupTasks.map(task => {
+                    const isCompleted = completedTasks.includes(task.id);
+                    const isSelected = selectedTaskId === task.id;
+                    return (
+                      <button
+                        key={task.id}
+                        type="button"
+                        onClick={() => onSelectTask(task.id)}
+                        className={`w-full text-left p-3 rounded-lg border transition text-xs ${
+                          isSelected ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-zinc-100 bg-white hover:border-blue-300'
+                        }`}
+                      >
+                        <p className="text-[9px] uppercase text-zinc-400 mb-1">{PHASE_LABELS[task.phase]}</p>
+                        <h4 className={`font-semibold line-clamp-2 ${isCompleted ? 'text-zinc-400 line-through' : 'text-zinc-900'}`}>
+                          {task.title}
+                        </h4>
+                        <p className="text-[10px] text-zinc-500 mt-2">{task.estimateMinutes} min</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </Card>
+            );
+          })}
         </div>
-        <div className="text-sm text-zinc-500">Tap a task to see details and mark it done.</div>
-      </header>
-      <div className="space-y-6">
-        {groups.map(([workPaperId, groupTasks]) => {
-          const completedCount = groupTasks.filter(task => completedTasks.includes(task.id)).length;
-          return (
-            <Card
-              key={workPaperId}
-              title={formatWpTitle(workPaperId)}
-              subtitle={`${completedCount}/${groupTasks.length} tasks complete`}
-              className="border-zinc-200"
-            >
-              <div className="space-y-3">
-                {groupTasks.map(task => {
-                  const isCompleted = completedTasks.includes(task.id);
-                  const isSelected = selectedTaskId === task.id;
-                  return (
-                    <button
-                      key={task.id}
-                      type="button"
-                      onClick={() => onSelectTask(task.id)}
-                      className={`w-full text-left p-4 rounded-3xl border transition ${
-                        isSelected ? 'border-blue-500 bg-blue-50' : 'border-zinc-200 bg-white hover:border-blue-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-400 mb-1">{PHASE_LABELS[task.phase]}</p>
-                          <h3 className={`font-semibold ${isCompleted ? 'text-zinc-500 line-through' : 'text-zinc-900'}`}>{task.title}</h3>
-                        </div>
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onToggleTask(task.id);
-                          }}
-                          className={`rounded-full px-3 py-1 text-[11px] font-semibold ${isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100 text-zinc-700'}`}
-                        >
-                          {isCompleted ? 'Done' : 'Mark done'}
-                        </button>
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-zinc-500">
-                        <span>{task.estimateMinutes} min</span>
-                        {task.unblocks && task.unblocks.length > 0 && <span>Unlocks {task.unblocks.length} item(s)</span>}
-                      </div>
-                    </button>
-                  );
-                })}
+      </div>
+
+      <div className="lg:col-span-2">
+        {selectedTask ? (
+          <Card title={`${formatWpTitle(selectedTask.workPaperId)} · ${PHASE_LABELS[selectedTask.phase]}`} subtitle={selectedTask.title}>
+            <div className="space-y-6">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-3 font-semibold">Why this task matters</p>
+                <p className="text-sm text-zinc-700 leading-relaxed">{selectedTask.why}</p>
               </div>
-            </Card>
-          );
-        })}
+
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-3 font-semibold">Key details</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] text-zinc-400">Estimate</p>
+                    <p className="font-semibold text-zinc-900">{selectedTask.estimateMinutes} minutes</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-zinc-400">Work Paper</p>
+                    <p className="font-semibold text-zinc-900">{formatWpTitle(selectedTask.workPaperId)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-3 font-semibold">Steps to complete</p>
+                <ol className="space-y-2">
+                  {selectedTask.steps.map((step, idx) => (
+                    <li key={idx} className="flex gap-3 text-sm text-zinc-700">
+                      <span className="font-bold text-zinc-400 shrink-0">{idx + 1}.</span>
+                      <span>{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              {selectedTask.command && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-2 font-semibold">Command to run</p>
+                  <code className="block bg-zinc-900 text-zinc-100 p-3 rounded-lg text-xs font-mono overflow-x-auto">
+                    {selectedTask.command}
+                  </code>
+                </div>
+              )}
+
+              {selectedTask.expectedOutput && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-2 font-semibold">Expected output</p>
+                  <p className="text-sm text-zinc-700 bg-zinc-50 p-3 rounded-lg font-mono">{selectedTask.expectedOutput}</p>
+                </div>
+              )}
+
+              {selectedTask.evidencePath && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-2 font-semibold">Evidence path</p>
+                  <p className="text-sm text-zinc-700 font-mono bg-amber-50 p-3 rounded-lg">{selectedTask.evidencePath}</p>
+                </div>
+              )}
+
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-2 font-semibold">Done condition</p>
+                <p className="text-sm text-zinc-700 bg-emerald-50 p-3 rounded-lg border border-emerald-200">{selectedTask.doneCondition}</p>
+              </div>
+
+              <button
+                onClick={() => onToggleTask(selectedTask.id)}
+                className={`w-full rounded-full py-3 text-sm font-bold transition ${
+                  isSelectedCompleted
+                    ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                    : 'bg-zinc-900 text-white hover:bg-zinc-800'
+                }`}
+              >
+                {isSelectedCompleted ? '✓ Mark incomplete' : 'Mark complete'}
+              </button>
+            </div>
+          </Card>
+        ) : (
+          <Card title="Select a task" subtitle="Choose a task from the queue to see full details.">
+            <p className="text-sm text-zinc-600">The right panel will show all task information including steps, commands, evidence paths, and completion criteria.</p>
+          </Card>
+        )}
       </div>
     </div>
   );
