@@ -8,9 +8,6 @@ export default defineConfig(({mode}) => {
   return {
     base: process.env.GITHUB_PAGES === 'true' ? '/AuditAIrange/' : '/',
     plugins: [react(), tailwindcss()],
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
