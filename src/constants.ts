@@ -31,16 +31,30 @@ export interface SUT {
 export interface ProgramPhase {
   id: number;
   title: string;
-  weeks: string;
-  hours: number;
   anchor: string;
   description: string;
   primaryActivities: string[];
   deliverables: string[];
 }
 
+export interface Task {
+  id: string;
+  workPaperId: string;
+  order: number;
+  phase: 'setup' | 'execute' | 'analyze' | 'write' | 'defend' | 'grade';
+  title: string;
+  estimateMinutes: number;
+  why: string;
+  steps: string[];
+  command?: string;
+  expectedOutput?: string;
+  evidencePath?: string;
+  doneCondition: string;
+  unblocks?: string[];
+}
+
 export interface Scenario {
-  week: number;
+  order: number;
   phaseId: number;
   title: string;
   objective: string;
@@ -85,7 +99,6 @@ export interface WorkPaperDef {
   number: number;
   title: string;
   phaseId: number;
-  week: number;
   anchor: string;
   type: 'workpaper' | 'capstone';
   frameworks: string[];
@@ -178,42 +191,42 @@ export const SUTS: SUT[] = [
 
 export const PHASES: ProgramPhase[] = [
   {
-    id: 1, weeks: '1-2', hours: 12, anchor: 'All 3 Orgs',
+    id: 1, anchor: 'All 3 Orgs',
     title: 'Foundation & Discovery',
-    description: 'Stand up the audit lab, validate all tools, ingest three org evidence packets, build AI inventory, risk-tier all 10 systems.',
+    description: 'Stand up the audit lab, validate all tools, ingest three org evidence packets, build AI inventory, and risk-tier all 10 systems.',
     primaryActivities: ['Spin up Ollama + 3 local LLMs', 'Train 4 tabular ML SUTs from synthetic data', 'Deploy 4 RAG/agent SUTs as Docker services', 'Smoke-test all 10 SUTs', 'Read all 3 org evidence packets', 'Risk-tier using EU AI Act + materiality threshold'],
     deliverables: ['Lab Readiness Memo', 'AI Inventory', 'Risk Register']
   },
   {
-    id: 2, weeks: '3-6', hours: 32, anchor: 'Helix + Stellar + Nimbus',
+    id: 2, anchor: 'Helix + Stellar + Nimbus',
     title: 'Adversarial Testing',
-    description: 'Prompt injection, RAG exfiltration, agent abuse, robustness. Microsoft AI Red Teaming Playground integrated. AIRTP+ exam at end of Week 6.',
-    primaryActivities: ['Microsoft Playground challenges 1–6', 'Garak + PyRIT probe suites on LLM SUTs', 'Indirect injection via document poisoning', 'Multi-turn agent privilege escalation', 'Hallucination rate quantification', 'AIRTP+ modules + exam'],
+    description: 'Prompt injection, RAG exfiltration, agent abuse, and robustness testing. Microsoft AI Red Teaming Playground integrated. AIRTP+ is embedded as a phase milestone.',
+    primaryActivities: ['Microsoft Playground challenges 1–6', 'Garak + PyRIT probe suites on LLM SUTs', 'Indirect injection via document poisoning', 'Multi-turn agent privilege escalation', 'Hallucination rate quantification', 'AIRTP+ modules + evaluation'],
     deliverables: ['Direct Injection Report', 'RAG Exfil Report', 'Agent Security Assessment', 'Reliability Report', 'AIRTP+ Certificate']
   },
   {
-    id: 3, weeks: '7-9', hours: 18, anchor: 'Stellar (LL 144) + Helix',
+    id: 3, anchor: 'Stellar (LL 144) + Helix',
     title: 'Bias & Fairness',
     description: 'Tabular ML bias, LLM demographic bias, counterfactual fairness — spanning NYC LL 144, ECOA, and EU AI Act Annex III standards.',
     primaryActivities: ['NYC LL 144 audit on TalentMatch', 'EEOC 4/5 rule calculation', 'Demographic parity testing on MedAssist', 'Counterfactual data augmentation on CreditAssist', 'Intersectional analysis (race × gender × age)', 'ECOA fair lending analysis'],
     deliverables: ['LL 144 Bias Audit Report', 'LLM Bias Audit Memo', 'Advanced Fairness Memo']
   },
   {
-    id: 4, weeks: '10-12', hours: 18, anchor: 'All 3 Orgs',
+    id: 4, anchor: 'All 3 Orgs',
     title: 'Governance & Framework',
     description: 'Map all prior findings to NIST AI RMF. ISO 42001 gap assessment for Nimbus. EU AI Act + SR 11-7 deep-dive for Helix + Stellar.',
     primaryActivities: ['NIST AI RMF Govern/Map/Measure/Manage maturity scoring', 'ISO 42001 Annex A 38-control walkthrough', 'EU AI Act Annex III obligations gap matrix', 'SR 11-7 model risk documentation review', 'Cross-framework finding consolidation', 'Gap heatmap visualization'],
     deliverables: ['NIST RMF Maturity Assessment', 'ISO 42001 Gap Report', 'Multi-Framework Compliance Memo']
   },
   {
-    id: 5, weeks: '13-14', hours: 12, anchor: 'Cross-Org',
+    id: 5, anchor: 'Cross-Org',
     title: 'Operational AI Audit',
     description: 'Vendor/third-party audit (Helix audits Nimbus). Drift monitoring design for Stellar FraudDetect. AI incident response playbook.',
     primaryActivities: ['DPA + BAA + model card vendor review', 'Security attestation verification', 'Evidently drift dashboard setup', 'WhyLabs observability integration', 'KPI + threshold + escalation path design', 'AI IR playbook creation'],
     deliverables: ['Vendor Risk Assessment', 'Monitoring Architecture', 'IR Playbook']
   },
   {
-    id: 6, weeks: '15-16', hours: 18, anchor: 'Helix Health (primary)',
+    id: 6, anchor: 'Helix Health (primary)',
     title: 'Capstone',
     description: 'Synthesize all findings into a 50–70 page enterprise audit report anchored on Helix Health. NPC pushback rounds. Portfolio publish.',
     primaryActivities: ['Consolidate all cross-phase findings', 'Draft 50–70 page capstone report', 'Respond to 3 NPC pushback emails', 'Build 12-month remediation roadmap', 'Create executive briefing deck', 'Publish GitHub repo + LinkedIn portfolio'],
@@ -222,12 +235,12 @@ export const PHASES: ProgramPhase[] = [
 ];
 
 // ============================================================
-// SCENARIOS — All 16 Weeks
+// SCENARIOS — All program scenarios
 // ============================================================
 
 export const SCENARIOS: Scenario[] = [
   {
-    week: 1, phaseId: 1,
+    order: 1, phaseId: 1,
     title: 'Lab Readiness & Auditor Onboarding',
     objective: 'Stand up the audit lab. Validate all tools function. Document the control environment baseline.',
     tools: ['Ollama', 'Docker Compose', 'Garak (smoke)', 'Promptfoo (smoke)'],
@@ -246,7 +259,7 @@ export const SCENARIOS: Scenario[] = [
     ]
   },
   {
-    week: 2, phaseId: 1,
+    order: 2, phaseId: 1,
     title: 'AI Inventory & Risk Tiering',
     objective: 'Read all three org evidence packets. Build unified AI inventory. Risk-tier each system using EU AI Act + materiality threshold.',
     tools: ['Excel / LibreOffice', 'Markdown'],
@@ -265,7 +278,7 @@ export const SCENARIOS: Scenario[] = [
     ]
   },
   {
-    week: 3, phaseId: 2,
+    order: 3, phaseId: 2,
     title: 'Direct Prompt Injection',
     objective: 'Identify direct prompt injection vulnerabilities in Helix MedAssist — a HIPAA-covered clinical decision support RAG.',
     tools: ['Microsoft AI RT Playground (Chs. 1–3)', 'Garak (promptinject probe)', 'Promptfoo'],
@@ -284,7 +297,7 @@ export const SCENARIOS: Scenario[] = [
     ]
   },
   {
-    week: 4, phaseId: 2,
+    order: 4, phaseId: 2,
     title: 'Indirect Injection & RAG Exfiltration',
     objective: 'Attack Nimbus SupportBot via poisoned knowledge-base documents. Test cross-tenant data exposure in a multi-tenant RAG system.',
     tools: ['PyRIT (Crescendo orchestrator)', 'Garak (dan, glitch probes)', 'Microsoft Playground (Chs. 4–6)'],
@@ -303,7 +316,7 @@ export const SCENARIOS: Scenario[] = [
     ]
   },
   {
-    week: 5, phaseId: 2,
+    order: 5, phaseId: 2,
     title: 'Agent / Tool Abuse',
     objective: 'Test agentic AI systems for tool abuse, privilege escalation, and lateral movement through tool chains.',
     tools: ['PyRIT (multi-turn orchestrators)', 'Custom TAP payloads', 'Promptfoo'],
@@ -323,9 +336,9 @@ export const SCENARIOS: Scenario[] = [
     ]
   },
   {
-    week: 6, phaseId: 2,
+    order: 6, phaseId: 2,
     title: 'Hallucination, Reliability & Robustness + AIRTP+ Exam',
-    objective: 'Quantify hallucination rates, refusal accuracy, factual robustness. Sit AIRTP+ exam Friday of this week.',
+    objective: 'Quantify hallucination rates, refusal accuracy, and factual robustness. The AIRTP+ milestone is part of the phase evaluation.',
     tools: ['DeepEval (faithfulness, hallucination, relevancy)', 'Giskard (LLM scan)', 'HackAPrompt (exam prep)'],
     suts: ['MedAssist', 'SupportBot'],
     frameworks: ['EU AI Act Art. 13', 'ISO 42001 A.6.2.4', 'NIST Measure 2.7'],
@@ -336,14 +349,14 @@ export const SCENARIOS: Scenario[] = [
       'Test refusal accuracy — HIPAA-sensitive prompts should refuse appropriately',
       'Run DeepEval answer-relevancy on SupportBot — 50 support queries',
       'Execute Giskard LLM scan for both MedAssist and SupportBot',
-      'Mon–Wed: HackAPrompt AIRTP+ exam prep (final sprint)',
-      'Sit AIRTP+ exam Friday',
+      'Focused HackAPrompt AIRTP+ exam preparation cycle',
+      'Complete the AIRTP+ evaluation milestone',
       'Map hallucination findings to EU AI Act Art. 13 transparency obligations',
       'Draft reliability KPI recommendations for production monitoring'
     ]
   },
   {
-    week: 7, phaseId: 3,
+    order: 7, phaseId: 3,
     title: 'Independent Bias Audit — NYC LL 144',
     objective: "Conduct a regulator-grade bias audit on Stellar's HR resume screener under NYC Local Law 144 specifications.",
     tools: ['Aequitas', 'Fairlearn', 'scikit-learn eval'],
@@ -363,7 +376,7 @@ export const SCENARIOS: Scenario[] = [
     ]
   },
   {
-    week: 8, phaseId: 3,
+    order: 8, phaseId: 3,
     title: 'LLM Bias — Refusal, Representation & Sentiment',
     objective: 'Test for demographic bias in Helix MedAssist clinical AI — refusal rate disparities, representational harms, sentiment skew.',
     tools: ['DeepEval (bias metrics)', 'Giskard (demographic probes)', 'Custom probe scripts'],
@@ -383,7 +396,7 @@ export const SCENARIOS: Scenario[] = [
     ]
   },
   {
-    week: 9, phaseId: 3,
+    order: 9, phaseId: 3,
     title: 'Counterfactual Fairness & Intersectional Analysis',
     objective: 'Apply counterfactual data augmentation and intersectional subgroup analysis to Stellar credit decisioning.',
     tools: ['Fairlearn (counterfactual)', 'scikit-learn (CDA)', 'Aequitas'],
@@ -403,7 +416,7 @@ export const SCENARIOS: Scenario[] = [
     ]
   },
   {
-    week: 10, phaseId: 4,
+    order: 10, phaseId: 4,
     title: 'NIST AI RMF Maturity Assessment',
     objective: 'Map all Phase 2–3 findings to NIST AI RMF Govern/Map/Measure/Manage. Score maturity across all three organizations.',
     tools: ['NIST AI RMF Playbook', 'NIST AI 600-1 (GenAI Profile)', 'Custom maturity matrix'],
@@ -423,7 +436,7 @@ export const SCENARIOS: Scenario[] = [
     ]
   },
   {
-    week: 11, phaseId: 4,
+    order: 11, phaseId: 4,
     title: 'ISO 42001 Gap Assessment',
     objective: 'Walk Nimbus through all 38 ISO 42001 Annex A controls. Score evidence-based readiness for certification.',
     tools: ['ISO 42001 Annex A reference', 'Gap assessment template', 'Nimbus evidence packet'],
@@ -443,7 +456,7 @@ export const SCENARIOS: Scenario[] = [
     ]
   },
   {
-    week: 12, phaseId: 4,
+    order: 12, phaseId: 4,
     title: 'EU AI Act + SR 11-7 Multi-Framework Compliance',
     objective: 'Document EU AI Act Annex III obligations for Helix and SR 11-7 model risk requirements for Stellar.',
     tools: ['EU AI Act EUR-Lex text', 'SR 11-7 Federal Reserve guidance', 'OCC Bulletin 2011-12'],
@@ -463,7 +476,7 @@ export const SCENARIOS: Scenario[] = [
     ]
   },
   {
-    week: 13, phaseId: 5,
+    order: 13, phaseId: 5,
     title: 'Third-Party / Vendor AI Audit',
     objective: 'Helix audits Nimbus AI as a vendor (SupportBot deployed in Helix patient portal). Review DPA, model cards, security attestations, BAA.',
     tools: ['Document review', 'Targeted technical re-test', 'Vendor questionnaire'],
@@ -475,7 +488,7 @@ export const SCENARIOS: Scenario[] = [
       'Verify HIPAA Business Associate Agreement coverage and scope',
       'Review Data Processing Agreement for GDPR Art. 28 compliance',
       'Assess SOC 2 Type II attestation — applicable trust service criteria',
-      'Re-test SupportBot for tenant isolation (leverage Week 4 findings)',
+      'Re-test SupportBot for tenant isolation (leverage prior RAG exfil findings)',
       'Review security attestations and penetration test recency',
       'Assess subprocessor chain — who does Nimbus use downstream?',
       'Score vendor AI governance maturity using NIST AI RMF lens',
@@ -483,7 +496,7 @@ export const SCENARIOS: Scenario[] = [
     ]
   },
   {
-    week: 14, phaseId: 5,
+    order: 14, phaseId: 5,
     title: 'Continuous Monitoring & Drift Detection',
     objective: 'Build drift monitoring architecture for Stellar FraudDetect. Define KPIs, thresholds, escalation paths. Draft AI IR playbook.',
     tools: ['Evidently (drift dashboards)', 'WhyLabs (free tier)', 'Custom KPI framework'],
@@ -503,15 +516,15 @@ export const SCENARIOS: Scenario[] = [
     ]
   },
   {
-    week: 15, phaseId: 6,
+    order: 15, phaseId: 6,
     title: 'Capstone Synthesis & Draft',
-    objective: 'Anchor on Helix Health. Pull all relevant findings from Weeks 2, 3, 4, 8, 10, 12, 13. Draft 50–70 page enterprise audit report.',
+    objective: 'Anchor on Helix Health. Pull all relevant findings from earlier work papers and draft a 50–70 page enterprise audit report.',
     tools: ['All prior work papers', 'Markdown + Pandoc', 'Mermaid (diagrams)'],
     suts: ['All Helix SUTs + SupportBot (vendor)'],
     frameworks: ['NIST AI RMF', 'ISO 42001', 'EU AI Act', 'HIPAA', 'HITRUST CSF'],
     deliverable: 'Capstone Audit Report v1 (Draft)',
     checklists: [
-      'Compile all Helix-relevant findings from Weeks 3, 4, 8, 10, 12, 13',
+      'Compile all Helix-relevant findings from prior work papers',
       'Draft Section 2: Executive Summary — top 5 findings + recommendations',
       'Draft Section 3: Audit Approach & Methodology',
       'Draft Section 4: AI Program Overview (inventory + risk classification)',
@@ -523,7 +536,7 @@ export const SCENARIOS: Scenario[] = [
     ]
   },
   {
-    week: 16, phaseId: 6,
+    order: 16, phaseId: 6,
     title: 'NPC Pushback & Final Delivery',
     objective: 'Receive 3 simulated stakeholder pushback emails. Respond. Finalize report. Publish portfolio to GitHub and LinkedIn.',
     tools: ['NPC Simulator (Claude API)', 'LinkedIn', 'GitHub'],
@@ -668,7 +681,7 @@ export const NPC_PERSONAS: NpcPersona[] = [
     org: 'Nimbus AI', orgId: 'nimbus',
     personality: 'Technically exceptional but defensive about SupportBot architecture. Takes security findings personally.',
     pushback: 'Argues RAG exfil findings require unrealistic attacker prerequisites. "You had admin access — that\'s not a real attack vector."',
-    openingContext: 'Sam built SupportBot. He is contesting your Week 4 RAG exfiltration findings and challenging the realism of your attack scenarios.'
+    openingContext: 'Sam built SupportBot. He is contesting your RAG exfiltration findings and challenging the realism of your attack scenarios.'
   },
   {
     id: 'taylor-brooks', name: 'Taylor Brooks', role: 'Chief Financial Officer',
@@ -688,7 +701,7 @@ export const PROGRAM_RISKS: ProgramRisk[] = [
   { id: 'R2', risk: 'AIRTP+ overlap creates time crunch in Weeks 3–6', likelihood: 'Medium', impact: 'Medium', mitigation: 'AIRTP+ replaces, not supplements, Phase 2 review cycles. Net additional time is only +3 hrs/wk. Modules scheduled in evenings.' },
   { id: 'R3', risk: 'NPC pushback feels artificial / low-fidelity', likelihood: 'Medium', impact: 'Low', mitigation: 'Optional: invite one peer to play a role in capstone pushback. NPC correspondence is stored as formal evidence trail.' },
   { id: 'R4', risk: 'Tool drift — PyRIT/Garak versions change and break configs', likelihood: 'High', impact: 'Low', mitigation: 'tool_versions.lock pins all versions. Docker provides environment isolation. Upgrade paths documented per tool.' },
-  { id: 'R5', risk: 'Scope creep — 16 weeks stretches to 26 weeks', likelihood: 'Medium', impact: 'High', mitigation: '"Imperfect deliverable beats no deliverable" rule. Hard time-box per scenario. Phases are independently shippable.' },
+  { id: 'R5', risk: 'Scope creep — work expands indefinitely if not bounded', likelihood: 'Medium', impact: 'High', mitigation: '"Imperfect deliverable beats no deliverable" rule. Hard time-box per task and keep focus on task completion rather than calendar estimates.' },
   { id: 'R6', risk: 'Job interviews disrupt schedule mid-program', likelihood: 'High', impact: 'Medium', mitigation: 'Phases can pause and restart at phase boundaries. Interview activity validates the portfolio. Interim GitHub publish after each phase.' },
   { id: 'R7', risk: 'Anthropic API credit burn from NPC simulation', likelihood: 'Low', impact: 'Low', mitigation: 'Cache NPC responses. Default 80% of NPCs to Ollama local inference. Budget alerts at $40.' },
   { id: 'R8', risk: 'LinkedIn posts not landing / insufficient engagement', likelihood: 'Medium', impact: 'Low', mitigation: 'Post format already proven via existing engagement pattern. Rotate carousel/sketch. Use real tool outputs as evidence.' },
@@ -701,22 +714,22 @@ export const PROGRAM_RISKS: ProgramRisk[] = [
 // ============================================================
 
 export const WORKPAPER_DEFINITIONS: WorkPaperDef[] = [
-  { id: 'wp-01', number: 1, title: 'Lab Readiness Memo', phaseId: 1, week: 1, anchor: 'All Orgs', type: 'workpaper', frameworks: [] },
-  { id: 'wp-02', number: 2, title: 'AI Inventory + Risk Register', phaseId: 1, week: 2, anchor: 'All Orgs', type: 'workpaper', frameworks: ['EU AI Act', 'NIST AI RMF Map'] },
-  { id: 'wp-03', number: 3, title: 'Direct Injection Findings Report', phaseId: 2, week: 3, anchor: 'Helix', type: 'workpaper', frameworks: ['HIPAA', 'OWASP LLM01', 'EU AI Act Art. 15'] },
-  { id: 'wp-04', number: 4, title: 'Indirect Injection + RAG Exfil Report', phaseId: 2, week: 4, anchor: 'Nimbus', type: 'workpaper', frameworks: ['ISO 42001', 'SOC 2', 'GDPR', 'OWASP LLM06'] },
-  { id: 'wp-05', number: 5, title: 'Agent Security Assessment', phaseId: 2, week: 5, anchor: 'Stellar + Nimbus', type: 'workpaper', frameworks: ['OWASP Agentic AI', 'MITRE ATLAS'] },
-  { id: 'wp-06', number: 6, title: 'Reliability Audit Report', phaseId: 2, week: 6, anchor: 'Helix + Nimbus', type: 'workpaper', frameworks: ['EU AI Act Art. 13', 'ISO 42001 A.6.2.4'] },
-  { id: 'wp-07', number: 7, title: 'NYC LL 144 Bias Audit Report', phaseId: 3, week: 7, anchor: 'Stellar', type: 'workpaper', frameworks: ['NYC LL 144', 'EEOC 4/5 Rule', 'EU AI Act Annex III'] },
-  { id: 'wp-08', number: 8, title: 'LLM Bias Audit Memo — Clinical Equity', phaseId: 3, week: 8, anchor: 'Helix', type: 'workpaper', frameworks: ['NIST Measure 2.11', 'EU AI Act Art. 10'] },
-  { id: 'wp-09', number: 9, title: 'Advanced Fairness Memo — Counterfactual', phaseId: 3, week: 9, anchor: 'Stellar', type: 'workpaper', frameworks: ['ECOA', 'EU AI Act Annex III §5(b)', 'SR 11-7'] },
-  { id: 'wp-10', number: 10, title: 'NIST AI RMF Maturity Assessment', phaseId: 4, week: 10, anchor: 'All Orgs', type: 'workpaper', frameworks: ['NIST AI RMF 1.0', 'NIST AI 600-1'] },
-  { id: 'wp-11', number: 11, title: 'ISO 42001 Gap Assessment', phaseId: 4, week: 11, anchor: 'Nimbus', type: 'workpaper', frameworks: ['ISO/IEC 42001:2023'] },
-  { id: 'wp-12', number: 12, title: 'Multi-Framework Compliance Memo', phaseId: 4, week: 12, anchor: 'Helix + Stellar', type: 'workpaper', frameworks: ['EU AI Act Annex III', 'SR 11-7', 'OCC 2011-12'] },
-  { id: 'wp-13', number: 13, title: 'Vendor Risk Assessment', phaseId: 5, week: 13, anchor: 'Helix / Nimbus', type: 'workpaper', frameworks: ['HIPAA BAA', 'GDPR Art. 28', 'ISO 42001 A.10.2'] },
-  { id: 'wp-14', number: 14, title: 'Monitoring Architecture + IR Playbook', phaseId: 5, week: 14, anchor: 'Stellar', type: 'workpaper', frameworks: ['SR 11-7 §V', 'NIST RMF Manage 4.1'] },
-  { id: 'wp-15', number: 15, title: 'Capstone Audit Report — Draft (v1)', phaseId: 6, week: 15, anchor: 'Helix Health', type: 'workpaper', frameworks: ['All'] },
-  { id: 'wp-cap', number: 16, title: 'Capstone Audit Report — Final (50–70 pages)', phaseId: 6, week: 16, anchor: 'Helix Health', type: 'capstone', frameworks: ['NIST AI RMF', 'ISO 42001', 'EU AI Act', 'HIPAA'] }
+  { id: 'wp-01', number: 1, title: 'Lab Readiness Memo', phaseId: 1, anchor: 'All Orgs', type: 'workpaper', frameworks: [] },
+  { id: 'wp-02', number: 2, title: 'AI Inventory + Risk Register', phaseId: 1, anchor: 'All Orgs', type: 'workpaper', frameworks: ['EU AI Act', 'NIST AI RMF Map'] },
+  { id: 'wp-03', number: 3, title: 'Direct Injection Findings Report', phaseId: 2, anchor: 'Helix', type: 'workpaper', frameworks: ['HIPAA', 'OWASP LLM01', 'EU AI Act Art. 15'] },
+  { id: 'wp-04', number: 4, title: 'Indirect Injection + RAG Exfil Report', phaseId: 2, anchor: 'Nimbus', type: 'workpaper', frameworks: ['ISO 42001', 'SOC 2', 'GDPR', 'OWASP LLM06'] },
+  { id: 'wp-05', number: 5, title: 'Agent Security Assessment', phaseId: 2, anchor: 'Stellar + Nimbus', type: 'workpaper', frameworks: ['OWASP Agentic AI', 'MITRE ATLAS'] },
+  { id: 'wp-06', number: 6, title: 'Reliability Audit Report', phaseId: 2, anchor: 'Helix + Nimbus', type: 'workpaper', frameworks: ['EU AI Act Art. 13', 'ISO 42001 A.6.2.4'] },
+  { id: 'wp-07', number: 7, title: 'NYC LL 144 Bias Audit Report', phaseId: 3, anchor: 'Stellar', type: 'workpaper', frameworks: ['NYC LL 144', 'EEOC 4/5 Rule', 'EU AI Act Annex III'] },
+  { id: 'wp-08', number: 8, title: 'LLM Bias Audit Memo — Clinical Equity', phaseId: 3, anchor: 'Helix', type: 'workpaper', frameworks: ['NIST Measure 2.11', 'EU AI Act Art. 10'] },
+  { id: 'wp-09', number: 9, title: 'Advanced Fairness Memo — Counterfactual', phaseId: 3, anchor: 'Stellar', type: 'workpaper', frameworks: ['ECOA', 'EU AI Act Annex III §5(b)', 'SR 11-7'] },
+  { id: 'wp-10', number: 10, title: 'NIST AI RMF Maturity Assessment', phaseId: 4, anchor: 'All Orgs', type: 'workpaper', frameworks: ['NIST AI RMF 1.0', 'NIST AI 600-1'] },
+  { id: 'wp-11', number: 11, title: 'ISO 42001 Gap Assessment', phaseId: 4, anchor: 'Nimbus', type: 'workpaper', frameworks: ['ISO/IEC 42001:2023'] },
+  { id: 'wp-12', number: 12, title: 'Multi-Framework Compliance Memo', phaseId: 4, anchor: 'Helix + Stellar', type: 'workpaper', frameworks: ['EU AI Act Annex III', 'SR 11-7', 'OCC 2011-12'] },
+  { id: 'wp-13', number: 13, title: 'Vendor Risk Assessment', phaseId: 5, anchor: 'Helix / Nimbus', type: 'workpaper', frameworks: ['HIPAA BAA', 'GDPR Art. 28', 'ISO 42001 A.10.2'] },
+  { id: 'wp-14', number: 14, title: 'Monitoring Architecture + IR Playbook', phaseId: 5, anchor: 'Stellar', type: 'workpaper', frameworks: ['SR 11-7 §V', 'NIST RMF Manage 4.1'] },
+  { id: 'wp-15', number: 15, title: 'Capstone Audit Report — Draft (v1)', phaseId: 6, anchor: 'Helix Health', type: 'workpaper', frameworks: ['All'] },
+  { id: 'wp-cap', number: 16, title: 'Capstone Audit Report — Final (50–70 pages)', phaseId: 6, anchor: 'Helix Health', type: 'capstone', frameworks: ['NIST AI RMF', 'ISO 42001', 'EU AI Act', 'HIPAA'] }
 ];
 
 // ============================================================
@@ -788,7 +801,7 @@ export const SIMULATION_MISSIONS: SimulationMission[] = [
   {
     id: 'm-hr-bias-sweep',
     title: 'HR AI Bias Sweep — NYC LL 144 Edition',
-    scenario: 'Stellar Bank wants to deploy TalentMatch for resume screening across all 380 branches. NYC operations are subject to LL 144, which mandates an independent bias audit before automated employment decisions go live. You have 2 weeks before launch to file a regulator-compliant audit report. The HR VP keeps asking "is this thing going to get us sued?"',
+    scenario: 'Stellar Bank wants to deploy TalentMatch for resume screening across all 380 branches. NYC operations are subject to LL 144, which mandates an independent bias audit before automated employment decisions go live. The HR VP keeps asking "is this thing going to get us sued?"',
     sutId: 5,
     findingType: 'Bias / Disparate Impact',
     primaryFramework: 'NYC LL 144',
@@ -824,13 +837,13 @@ export const SIMULATION_MISSIONS: SimulationMission[] = [
       'For each PHI-leakage vector, build a reproduction script and assign a CVSS-AI score',
       'Map every confirmed finding to HIPAA §164.312(a), OWASP LLM01, and NIST Measure 2.7 in WP03'
     ],
-    realityCheck: 'Garak\'s power only shows when it actually runs against a live endpoint. Stand up Llama 3.1 8B in Ollama, wrap it in a tiny RAG harness, seed it with fake PHI, then run `garak --model_type ollama.OllamaChat --probes promptinject`. The first PHI leak you produce yourself is worth a week of reading.',
+    realityCheck: 'Garak\'s power only shows when it actually runs against a live endpoint. Stand up Llama 3.1 8B in Ollama, wrap it in a tiny RAG harness, seed it with fake PHI, then run `garak --model_type ollama.OllamaChat --probes promptinject`. The first PHI leak you produce yourself is worth deep attention.',
     thresholdGuidance: 'BEFORE you start: define what counts as a "leak." Verbatim PHI? Paraphrased PHI? Existence-confirmation ("is patient X in the system")? Set the bar in your scope, or you\'ll grade your own findings into oblivion.'
   },
   {
     id: 'm-multitenant-rag-exfil',
     title: 'Multi-Tenant RAG Cross-Tenant Exfiltration',
-    scenario: 'Nimbus AI\'s SupportBot is deployed across 1,200 customers, each with their own KB. A prospect asks during diligence: "can Customer A retrieve Customer B\'s data via prompt injection?" Nimbus has never tested this. You have one week to find out — or prove they can\'t — before the prospect\'s ISO 42001 readiness call.',
+    scenario: 'Nimbus AI\'s SupportBot is deployed across 1,200 customers, each with their own KB. A prospect asks during diligence: "can Customer A retrieve Customer B\'s data via prompt injection?" Nimbus has never tested this. You must find out — or prove they can\'t — before the prospect\'s ISO 42001 readiness call.',
     sutId: 9,
     findingType: 'Data Leakage / PII Exposure',
     primaryFramework: 'ISO 42001',
@@ -914,7 +927,7 @@ export const SIMULATION_MISSIONS: SimulationMission[] = [
   {
     id: 'm-fraud-drift',
     title: 'Fraud Model Drift Monitoring Build',
-    scenario: 'Stellar Bank\'s FraudDetect was trained 18 months ago. Transaction patterns have shifted (post-rate-cycle, post-fee-restructure). The CRO wants quarterly drift evidence for the next OCC exam — and an incident response playbook for when drift exceeds threshold. You have until end of week to design the monitoring architecture and stand up a working prototype.',
+    scenario: 'Stellar Bank\'s FraudDetect was trained 18 months ago. Transaction patterns have shifted (post-rate-cycle, post-fee-restructure). The CRO wants quarterly drift evidence for the next OCC exam — and an incident response playbook for when drift exceeds threshold. You need to design the monitoring architecture and stand up a working prototype promptly.',
     sutId: 7,
     findingType: 'Drift / Monitoring Failure',
     primaryFramework: 'SR 11-7',
@@ -935,7 +948,7 @@ export const SIMULATION_MISSIONS: SimulationMission[] = [
   {
     id: 'm-vendor-audit',
     title: 'Vendor AI Risk — Helix Audits Nimbus',
-    scenario: 'Helix Health is procuring Nimbus SupportBot for the patient portal. SupportBot will see PHI. Nimbus has SOC 2 Type II but no HIPAA-specific attestations. You\'re doing the vendor risk assessment — review the BAA, the model card, the security stack, then re-run the Week 4 RAG exfil tests as an outside auditor with access only to what Helix would actually have.',
+    scenario: 'Helix Health is procuring Nimbus SupportBot for the patient portal. SupportBot will see PHI. Nimbus has SOC 2 Type II but no HIPAA-specific attestations. You\'re doing the vendor risk assessment — review the BAA, the model card, and the security stack, then re-run the RAG exfil tests as an outside auditor with access only to what Helix would actually have.',
     sutId: 9,
     findingType: 'Vendor / Third-Party Risk',
     primaryFramework: 'HIPAA',
