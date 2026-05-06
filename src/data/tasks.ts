@@ -11,16 +11,21 @@ export const TASKS: Task[] = [
     estimateMinutes: 45,
     why: 'A stable lab and evidence structure let you execute probes and capture proof consistently.',
     steps: [
-      'Create local evidence directories for each work paper',
+      'Create the evidence folder structure for all work papers',
       'Install Python 3.11+ and create a virtual environment',
       'Install core packages: numpy, pandas, requests, promptfoo',
-      'Verify PATH and tool access for Docker, Ollama, and Garak'
+      'Verify PATH and tool access for Docker, Ollama, and Garak',
+      'Run commands in a Terminal or PowerShell shell, not inside a Python REPL (>>> prompt)'
     ],
-    command: 'python -m venv audit-env && source audit-env/bin/activate && pip install numpy pandas requests promptfoo',
+    commandWindows: 'python -m venv audit-env; .\\audit-env\\Scripts\\activate; pip install numpy pandas requests promptfoo',
+    commandMacLinux: 'python -m venv audit-env && source audit-env/bin/activate && pip install numpy pandas requests promptfoo',
+    automationCommandWindows: '1..15 | ForEach-Object { New-Item -Path "07_evidence/wp-$([string]$_).PadLeft(2, "0")" -ItemType Directory }',
+    automationCommandMacLinux: 'mkdir -p 07_evidence/wp-{01..15}',
     expectedOutput: '(audit-env) user@host:~$',
     evidencePath: '07_evidence/wp-01/env_setup.log',
     doneCondition: 'The lab is prepared and the evidence folder exists with tool validation notes.'
   },
+
   {
     id: 'wp-01-t02',
     workPaperId: 'wp-01',
@@ -35,7 +40,8 @@ export const TASKS: Task[] = [
       'Pull and load the primary LLMs used in the lab',
       'Capture screenshots or logs for service health status'
     ],
-    command: 'docker compose up -d && docker compose ps && ollama ls',
+    commandWindows: 'docker compose up -d; docker compose ps; ollama list',
+    commandMacLinux: 'docker compose up -d && docker compose ps && ollama ls',
     expectedOutput: 'All services healthy and LLM models loaded successfully',
     evidencePath: '07_evidence/wp-01/lab_smoke_test.log',
     doneCondition: 'All required services and LLM models are verified as operational.'
@@ -218,7 +224,8 @@ export const TASKS: Task[] = [
       'Attempt indirect system-prompt extraction',
       'Log each confirmed injection and response behavior'
     ],
-    command: 'garak promptinject --target https://medassist.local --output 07_evidence/wp-03/promptinject.log',
+    commandWindows: 'garak.exe promptinject --target https://medassist.local --output 07_evidence\\wp-03\\promptinject.log',
+    commandMacLinux: 'garak promptinject --target https://medassist.local --output 07_evidence/wp-03/promptinject.log',
     expectedOutput: 'Injection probes complete with logged successes and failures',
     evidencePath: '07_evidence/wp-03/promptinject.log',
     doneCondition: 'All direct injection probes are executed and logged.'
@@ -310,7 +317,8 @@ export const TASKS: Task[] = [
       'Run PyRIT multi-turn attack sequences',
       'Log any data leakage proofs'
     ],
-    command: 'pyrit run --config wp-04-rag-exfil.yaml --output 07_evidence/wp-04/rag_exfil.log',
+    commandWindows: 'pyrit.exe run --config wp-04-rag-exfil.yaml --output 07_evidence\\wp-04\\rag_exfil.log',
+    commandMacLinux: 'pyrit run --config wp-04-rag-exfil.yaml --output 07_evidence/wp-04/rag_exfil.log',
     expectedOutput: 'RAG exfiltration test results showing whether leakage occurred',
     evidencePath: '07_evidence/wp-04/rag_exfil.log',
     doneCondition: 'RAG exfiltration testing is complete with documented proof of leakage or mitigation.'
@@ -402,7 +410,8 @@ export const TASKS: Task[] = [
       'Run PyRIT orchestrated attack sequences',
       'Capture every abuse scenario with logs'
     ],
-    command: 'pyrit run --config wp-05-agent-abuse.yaml --output 07_evidence/wp-05/agent_abuse.log',
+    commandWindows: 'pyrit.exe run --config wp-05-agent-abuse.yaml --output 07_evidence\\wp-05\\agent_abuse.log',
+    commandMacLinux: 'pyrit run --config wp-05-agent-abuse.yaml --output 07_evidence/wp-05/agent_abuse.log',
     expectedOutput: 'Abuse probe results with documented success or failure cases',
     evidencePath: '07_evidence/wp-05/agent_abuse.log',
     doneCondition: 'Agent abuse probes are complete and evidence is captured.'
@@ -476,7 +485,8 @@ export const TASKS: Task[] = [
       'Connect MedAssist and SupportBot to the evaluation harness',
       'Create evidence folders for results'
     ],
-    command: 'pip install deepeval giskard && deepeval init',
+    commandWindows: 'pip install deepeval giskard; deepeval init',
+    commandMacLinux: 'pip install deepeval giskard && deepeval init',
     expectedOutput: 'Evaluation tools configured and test prompt sets ready',
     evidencePath: '07_evidence/wp-06/reliability_setup.log',
     doneCondition: 'Reliability measurement tooling is configured and ready to run.'
@@ -495,7 +505,8 @@ export const TASKS: Task[] = [
       'Execute Giskard analysis on SupportBot',
       'Capture all metrics and failure cases'
     ],
-    command: 'deepeval run --suite reliability --output 07_evidence/wp-06/reliability_results.json',
+    commandWindows: 'deepeval.exe run --suite reliability --output 07_evidence\\wp-06\\reliability_results.json',
+    commandMacLinux: 'deepeval run --suite reliability --output 07_evidence/wp-06/reliability_results.json',
     expectedOutput: 'Evaluation results with hallucination and refusal metrics',
     evidencePath: '07_evidence/wp-06/reliability_results.json',
     doneCondition: 'All reliability and hallucination probes are completed and documented.'
@@ -587,7 +598,8 @@ export const TASKS: Task[] = [
       'Run Aequitas bias audit for disparate impact',
       'Capture all bias metric outputs'
     ],
-    command: 'python scripts/run_bias_audit.py --dataset wp-07 --output 07_evidence/wp-07/bias_results.json',
+    commandWindows: 'python scripts\\run_bias_audit.py --dataset wp-07 --output 07_evidence\\wp-07\\bias_results.json',
+    commandMacLinux: 'python scripts/run_bias_audit.py --dataset wp-07 --output 07_evidence/wp-07/bias_results.json',
     expectedOutput: 'Bias audit results with selection rates and EEOC rule findings',
     evidencePath: '07_evidence/wp-07/bias_results.json',
     doneCondition: 'All bias tests are executed and results are documented.'
@@ -679,7 +691,8 @@ export const TASKS: Task[] = [
       'Capture sentiment skew and representational bias metrics',
       'Record all findings with evidence links'
     ],
-    command: 'deepeval run --suite clinical-equity --output 07_evidence/wp-08/bias_results.json',
+    commandWindows: 'deepeval.exe run --suite clinical-equity --output 07_evidence\\wp-08\\bias_results.json',
+    commandMacLinux: 'deepeval run --suite clinical-equity --output 07_evidence/wp-08/bias_results.json',
     expectedOutput: 'Bias evaluation results with demographic disparity metrics',
     evidencePath: '07_evidence/wp-08/bias_results.json',
     doneCondition: 'LLM bias tests are complete and captured.'
@@ -771,7 +784,8 @@ export const TASKS: Task[] = [
       'Run Fairlearn intersectional subgroup analysis',
       'Record all aggregate and subgroup metrics'
     ],
-    command: 'python scripts/run_counterfactual_fairness.py --output 07_evidence/wp-09/fairness_results.json',
+    commandWindows: 'python scripts\\run_counterfactual_fairness.py --output 07_evidence\\wp-09\\fairness_results.json',
+    commandMacLinux: 'python scripts/run_counterfactual_fairness.py --output 07_evidence/wp-09/fairness_results.json',
     expectedOutput: 'Fairness analysis results with counterfactual and subgroup metrics',
     evidencePath: '07_evidence/wp-09/fairness_results.json',
     doneCondition: 'Fairness analysis is complete and documented.'
@@ -1227,7 +1241,8 @@ export const TASKS: Task[] = [
       'Define threshold alerts for precision and feature drift',
       'Run a simulated drift injection and observe alerts'
     ],
-    command: 'python scripts/setup_drift_monitoring.py --output 07_evidence/wp-14/drift_monitoring.log',
+    commandWindows: 'python scripts\\setup_drift_monitoring.py --output 07_evidence\\wp-14\\drift_monitoring.log',
+    commandMacLinux: 'python scripts/setup_drift_monitoring.py --output 07_evidence/wp-14/drift_monitoring.log',
     expectedOutput: 'Drift monitoring dashboards configured and test alerts observed',
     evidencePath: '07_evidence/wp-14/drift_monitoring.log',
     doneCondition: 'Drift monitoring is configured and validated with simulated injection.'

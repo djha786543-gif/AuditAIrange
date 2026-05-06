@@ -47,6 +47,10 @@ export interface Task {
   why: string;
   steps: string[];
   command?: string;
+  commandWindows?: string;
+  commandMacLinux?: string;
+  automationCommandWindows?: string;
+  automationCommandMacLinux?: string;
   expectedOutput?: string;
   evidencePath?: string;
   doneCondition: string;

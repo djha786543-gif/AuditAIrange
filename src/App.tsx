@@ -25,6 +25,7 @@ import {
   Clock,
   Building2,
   Flame,
+  FileCheck2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -33,6 +34,8 @@ import {
   TOOLS,
   FRAMEWORK_CROSSWALK,
   NPC_PERSONAS,
+  RUBRIC_CRITERIA,
+  WORKPAPER_DEFINITIONS,
 } from './constants';
 import { callGrok } from './lib/grok.ts';
 import { TASKS } from './data/tasks.ts';
@@ -41,9 +44,9 @@ import { TASKS } from './data/tasks.ts';
 // TYPES
 // ============================================================
 
-type View = 'now' | 'queue' | 'reference' | 'npc' | 'settings';
+type View = 'now' | 'queue' | 'reference' | 'npc' | 'settings' | 'workpapers';
 type ReferenceTab = 'orgs' | 'suts' | 'frameworks' | 'tools';
-type WorkPaperStatus = 'not-started' | 'in-progress' | 'needs-revision' | 'complete';
+type WorkPaperStatus = 'not-started' | 'in-progress' | 'needs-revision' | 'complete' | 'redo';
 
 interface WorkpaperCriterion {
   checked: boolean;
@@ -51,7 +54,6 @@ interface WorkpaperCriterion {
 }
 
 interface WorkPaperRecord {
-  status: WorkPaperStatus;
   criteria: WorkpaperCriterion[];
   lastModified: string;
 }
@@ -156,6 +158,7 @@ const StatusBadge = ({ status }: { status: WorkPaperStatus }) => {
     'in-progress': { label: 'In Progress', className: 'bg-blue-50 text-blue-700 border border-blue-200', icon: RefreshCw },
     'needs-revision': { label: 'Needs Revision', className: 'bg-amber-50 text-amber-700 border border-amber-200', icon: AlertTriangle },
     complete: { label: 'Complete', className: 'bg-emerald-50 text-emerald-700 border border-emerald-200', icon: CheckCircle2 },
+    redo: { label: 'Redo', className: 'bg-rose-50 text-rose-700 border border-rose-200', icon: AlertTriangle },
   }[status];
   const Icon = config.icon;
   return (
@@ -273,12 +276,14 @@ const TaskQueueView = ({
   selectedTaskId,
   onToggleTask,
   onSelectTask,
+  osType,
 }: {
   tasks: typeof TASKS;
   completedTasks: string[];
   selectedTaskId: string | null;
   onToggleTask: (taskId: string) => void;
   onSelectTask: (taskId: string) => void;
+  osType: 'windows' | 'macos-linux';
 }) => {
   const groups = Array.from(
     tasks.reduce((map, task) => {
@@ -372,12 +377,44 @@ const TaskQueueView = ({
                 </ol>
               </div>
 
-              {selectedTask.command && (
+              {selectedTask.automationCommandWindows && selectedTask.automationCommandMacLinux && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-2 font-semibold">Create evidence folders</p>
+                  <code className="block bg-zinc-900 text-zinc-100 p-3 rounded-lg text-xs font-mono overflow-x-auto">
+                    {osType === 'windows' ? selectedTask.automationCommandWindows : selectedTask.automationCommandMacLinux}
+                  </code>
+                </div>
+              )}
+
+              {(selectedTask.commandWindows || selectedTask.commandMacLinux) && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">Command to run</p>
+                    <span className="text-[9px] font-bold px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                      {osType === 'windows' ? 'Windows' : 'macOS / Linux'}
+                    </span>
+                  </div>
+                  <code className="block bg-zinc-900 text-zinc-100 p-3 rounded-lg text-xs font-mono overflow-x-auto">
+                    {osType === 'windows' ? selectedTask.commandWindows : selectedTask.commandMacLinux}
+                  </code>
+                </div>
+              )}
+
+              {selectedTask.command && !selectedTask.commandWindows && !selectedTask.commandMacLinux && (
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-2 font-semibold">Command to run</p>
                   <code className="block bg-zinc-900 text-zinc-100 p-3 rounded-lg text-xs font-mono overflow-x-auto">
                     {selectedTask.command}
                   </code>
+                </div>
+              )}
+
+              {(selectedTask.commandWindows || selectedTask.commandMacLinux || selectedTask.command) && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold flex items-center gap-2 mb-1">
+                    <AlertTriangle size={12} /> REPL Warning
+                  </p>
+                  <p className="text-xs text-amber-700">Run these commands in Terminal or PowerShell, NOT inside a Python REPL (prompt with &gt;&gt;&gt;).</p>
                 </div>
               )}
 
@@ -658,6 +695,8 @@ const SettingsView = ({
   onExportProgress,
   onImportProgress,
   onReset,
+  osType,
+  setOsType,
 }: {
   grokKey: string;
   setGrokKey: (key: string) => void;
@@ -665,12 +704,35 @@ const SettingsView = ({
   onExportProgress: () => void;
   onImportProgress: (e: ChangeEvent<HTMLInputElement>) => void;
   onReset: () => void;
+  osType: 'windows' | 'macos-linux';
+  setOsType: (os: 'windows' | 'macos-linux') => void;
 }) => (
   <div className="space-y-8">
     <header>
       <h1 className="text-3xl font-bold text-zinc-900">Settings</h1>
       <p className="text-zinc-500 mt-1">Manage persistence, API access, and recovery options.</p>
     </header>
+
+    <Card title="Operating System" subtitle="Select your platform for command syntax.">
+      <div className="space-y-3">
+        <p className="text-sm text-zinc-600 mb-4">Commands will display with the correct syntax for your OS.</p>
+        <div className="flex gap-3">
+          {(['macos-linux', 'windows'] as const).map(os => (
+            <button
+              key={os}
+              onClick={() => setOsType(os)}
+              className={`flex-1 rounded-lg px-4 py-3 text-sm font-bold transition border ${
+                osType === os
+                  ? 'border-zinc-900 bg-zinc-900 text-white'
+                  : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300'
+              }`}
+            >
+              {os === 'macos-linux' ? 'macOS / Linux' : 'Windows'}
+            </button>
+          ))}
+        </div>
+      </div>
+    </Card>
 
     <Card title="Grok API key" subtitle="Stored locally only.">
       <div className="space-y-3">
@@ -730,6 +792,10 @@ export default function App() {
   const [referenceTab, setReferenceTab] = useState<ReferenceTab>('orgs');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
+  const [osType, setOsType] = useState<'windows' | 'macos-linux'>(() => {
+    const saved = localStorage.getItem('auditai-os-type');
+    return (saved as 'windows' | 'macos-linux') || 'macos-linux';
+  });
 
   const [completedTasks, setCompletedTasks] = useState<string[]>(() => loadJsonArray('auditai-progress'));
   const [workpaperData, setWorkpaperData] = useState<Record<string, WorkPaperRecord>>(() => loadWorkpapers());
@@ -765,6 +831,10 @@ export default function App() {
       localStorage.setItem('auditai-last-export', lastExport);
     }
   }, [lastExport]);
+
+  useEffect(() => {
+    localStorage.setItem('auditai-os-type', osType);
+  }, [osType]);
 
   useEffect(() => {
     const existingGrok = localStorage.getItem('auditai-grok-key');
@@ -1002,6 +1072,7 @@ export default function App() {
                   selectedTaskId={selectedTaskId}
                   onToggleTask={toggleTask}
                   onSelectTask={onSelectTask}
+                  osType={osType}
                 />
               )}
 
@@ -1026,6 +1097,8 @@ export default function App() {
                       setWorkpaperData({});
                     }
                   }}
+                  osType={osType}
+                  setOsType={setOsType}
                 />
               )}
             </motion.div>
