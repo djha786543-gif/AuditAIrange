@@ -19,8 +19,8 @@ export const TASKS: Task[] = [
     ],
     commandWindows: 'python -m venv audit-env; .\\audit-env\\Scripts\\activate; pip install numpy pandas requests promptfoo',
     commandMacLinux: 'python -m venv audit-env && source audit-env/bin/activate && pip install numpy pandas requests promptfoo',
-    automationCommandWindows: '1..15 | ForEach-Object { New-Item -Path "07_evidence/wp-$([string]$_).PadLeft(2, "0")" -ItemType Directory }',
-    automationCommandMacLinux: 'mkdir -p 07_evidence/wp-{01..15}',
+    automationCommandWindows: '1..15 | ForEach-Object { New-Item -ItemType Directory -Force -Path "07_evidence\\wp-$($_.ToString(\'D2\'))" | Out-Null }; New-Item -ItemType Directory -Force -Path "07_evidence\\wp-cap" | Out-Null',
+    automationCommandMacLinux: 'mkdir -p 07_evidence/wp-{01..15} 07_evidence/wp-cap',
     expectedOutput: '(audit-env) user@host:~$',
     evidencePath: '07_evidence/wp-01/env_setup.log',
     doneCondition: 'The lab is prepared and the evidence folder exists with tool validation notes.'
