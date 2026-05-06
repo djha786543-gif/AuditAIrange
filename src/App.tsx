@@ -878,7 +878,7 @@ const AiTutorButton = ({
   grokKey: string;
   onClick: () => void;
 }) => {
-  if (!grokKey) return null;
+  const hasKey = Boolean(grokKey);
   return (
     <button
       onClick={onClick}
@@ -887,13 +887,16 @@ const AiTutorButton = ({
         backgroundImage: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #ec4899 100%)',
         boxShadow: '0 10px 30px -10px rgba(124, 58, 237, 0.55), 0 1px 2px rgba(24,24,27,0.08)',
       }}
-      title="Open AI Tutor (Grok) — press T"
+      title={hasKey ? 'Open AI Tutor (Grok) — press T' : 'Add a Grok API key in Settings to chat with the Tutor'}
     >
       <span className="relative flex h-5 w-5 items-center justify-center">
         <span className="absolute inset-0 rounded-full bg-white/20 group-hover:bg-white/30 transition" />
         <Sparkles size={13} className="relative" />
       </span>
-      Ask Tutor
+      {hasKey ? 'Ask Tutor' : 'Set up Tutor'}
+      {!hasKey && (
+        <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-amber-400 ring-2 ring-white animate-pulse" />
+      )}
       <kbd className="ml-1 hidden md:inline-flex items-center justify-center h-5 w-5 rounded bg-white/15 text-[10px] font-bold">T</kbd>
     </button>
   );
@@ -1232,10 +1235,8 @@ export default function App() {
       }
 
       if (e.key === 't' || e.key === 'T') {
-        if (grokKey) {
-          e.preventDefault();
-          setIsTutorOpen(o => !o);
-        }
+        e.preventDefault();
+        setIsTutorOpen(o => !o);
         return;
       }
 
@@ -1263,7 +1264,7 @@ export default function App() {
       window.removeEventListener('keydown', handler);
       if (resetTimer) clearTimeout(resetTimer);
     };
-  }, [grokKey]);
+  }, []);
 
   return (
     <div className="flex h-screen app-canvas font-sans selection:bg-indigo-500 selection:text-white">
