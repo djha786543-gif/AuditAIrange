@@ -1369,7 +1369,7 @@ export default function App() {
   const streak = calculateStreak();
 
   const nav = [
-    { view: 'now' as View, icon: LayoutDashboard, label: 'What&apos;s Next', badge: totalTasks - completedCount },
+    { view: 'now' as View, icon: LayoutDashboard, label: "What's Next", badge: totalTasks - completedCount },
     { view: 'queue' as View, icon: ClipboardCheck, label: 'Task queue', badge: completedCount },
     { view: 'npc' as View, icon: Users, label: 'NPC practice' },
     { view: 'reference' as View, icon: BookOpen, label: 'Reference' },
@@ -1596,7 +1596,7 @@ export default function App() {
               </div>
               <ul className="space-y-2 text-sm">
                 {[
-                  { keys: ['g', 'n'], label: 'Go to What&apos;s Next' },
+                  { keys: ['g', 'n'], label: "Go to What's Next" },
                   { keys: ['g', 'q'], label: 'Go to Task queue' },
                   { keys: ['g', 'p'], label: 'Go to NPC practice' },
                   { keys: ['g', 'r'], label: 'Go to Reference' },
