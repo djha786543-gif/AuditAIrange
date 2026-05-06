@@ -34,7 +34,7 @@ import {
   RUBRIC_CRITERIA,
   WORKPAPER_DEFINITIONS,
 } from './constants';
-import { callGrok } from './lib/grok.ts';
+import { callLlm, PROVIDER_DEFAULTS, GROQ_MODELS, GROK_MODELS, type LlmConfig, type LlmProvider } from './lib/llm.ts';
 import { TASKS } from './data/tasks.ts';
 
 // ============================================================
@@ -650,14 +650,15 @@ const ReferenceView = ({
 );
 
 const NpcSimView = ({
-  grokKey,
+  llmConfig,
   selectedTask,
   onActivity,
 }: {
-  grokKey: string;
+  llmConfig: LlmConfig;
   selectedTask?: typeof TASKS[0] | null;
   onActivity: () => void;
 }) => {
+  const providerLabel = PROVIDER_DEFAULTS[llmConfig.provider].label;
   const [personaId, setPersonaId] = useState(NPC_PERSONAS[0]?.id || '');
   const [history, setHistory] = useState<ConversationMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -681,11 +682,11 @@ const NpcSimView = ({
         persona.pushback,
         selectedTask ? `The auditor is working on task ${formatWpTitle(selectedTask.workPaperId)}: ${selectedTask.title}. Provide challenging but constructive stakeholder feedback based on that task.` : 'The auditor may ask you to role-play stakeholder pushback for their audit work.',
       ];
-      const response = await callGrok(promptParts.join(' '), userMessage, nextHistory);
+      const response = await callLlm(llmConfig, promptParts.join(' '), userMessage, nextHistory);
       setHistory(prev => [...prev, { role: 'assistant', content: response }]);
       onActivity();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to contact Grok.');
+      setError(err instanceof Error ? err.message : `Unable to contact ${providerLabel}.`);
     } finally {
       setLoading(false);
     }
@@ -707,9 +708,9 @@ const NpcSimView = ({
         </div>
       </header>
 
-      {!grokKey ? (
-        <Card title="Grok key required" subtitle="Enter your Grok API key in Settings to use this simulator.">
-          <p className="text-sm text-zinc-600">NPC simulation requires a live xAI Grok API key. It is stored locally only.</p>
+      {!llmConfig.apiKey ? (
+        <Card title={`${providerLabel} key required`} subtitle={`Enter your ${providerLabel} API key in Settings to use this simulator.`}>
+          <p className="text-sm text-zinc-600">NPC simulation needs a live {providerLabel} API key. It is stored in your browser only.</p>
         </Card>
       ) : (
         <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
@@ -748,7 +749,7 @@ const NpcSimView = ({
                   disabled={loading}
                   className="inline-flex items-center gap-2 rounded-full bg-zinc-900 px-5 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {loading ? 'Thinking…' : 'Send to Grok'}
+                  {loading ? 'Thinking…' : `Send to ${providerLabel}`}
                 </button>
               </div>
             </Card>
@@ -775,8 +776,16 @@ const NpcSimView = ({
 };
 
 const SettingsView = ({
+  provider,
+  setProvider,
   grokKey,
   setGrokKey,
+  groqKey,
+  setGroqKey,
+  grokModel,
+  setGrokModel,
+  groqModel,
+  setGroqModel,
   lastExport,
   onExportProgress,
   onImportProgress,
@@ -784,8 +793,16 @@ const SettingsView = ({
   osType,
   setOsType,
 }: {
+  provider: LlmProvider;
+  setProvider: (p: LlmProvider) => void;
   grokKey: string;
   setGrokKey: (key: string) => void;
+  groqKey: string;
+  setGroqKey: (key: string) => void;
+  grokModel: string;
+  setGrokModel: (model: string) => void;
+  groqModel: string;
+  setGroqModel: (model: string) => void;
   lastExport: string | null;
   onExportProgress: () => void;
   onImportProgress: (e: ChangeEvent<HTMLInputElement>) => void;
@@ -829,16 +846,121 @@ const SettingsView = ({
       </div>
     </Card>
 
-    <Card title="Grok API key" subtitle="Stored locally only.">
+    <Card title="AI provider" subtitle="Choose which LLM powers the Tutor and NPC simulator.">
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          {(['grok', 'groq'] as const).map(p => {
+            const meta = PROVIDER_DEFAULTS[p];
+            const active = provider === p;
+            return (
+              <button
+                key={p}
+                onClick={() => setProvider(p)}
+                className={`relative rounded-2xl px-4 py-4 text-sm transition-all duration-200 border text-left ${
+                  active
+                    ? 'border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-pink-50 shadow-[0_2px_4px_rgba(79,70,229,0.06),0_12px_28px_-14px_rgba(79,70,229,0.35)]'
+                    : 'border-zinc-200/80 bg-white/70 text-zinc-700 hover:border-indigo-200 hover:bg-white'
+                }`}
+              >
+                <p className={`text-[10px] uppercase tracking-wider mb-1 font-semibold ${active ? 'text-indigo-600' : 'text-zinc-400'}`}>
+                  {p === 'grok' ? 'xAI · Grok' : 'Groq · Llama / Mixtral'}
+                </p>
+                <p className="text-zinc-900 font-bold">{meta.label}</p>
+                <p className="text-[11px] text-zinc-500 mt-1 font-mono">{meta.keyPrefix}…</p>
+                {active && (
+                  <span className="absolute top-3 right-3 inline-flex items-center justify-center h-5 w-5 rounded-full bg-gradient-to-br from-indigo-500 to-pink-500 text-white">
+                    <Check size={12} />
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-xs text-zinc-500">
+          Grok ≠ Groq. Different products. Grok keys start with <code className="font-mono">xai-</code>; Groq keys start with <code className="font-mono">gsk_</code>.
+        </p>
+      </div>
+    </Card>
+
+    <Card title={`${PROVIDER_DEFAULTS[provider].label} API key`} subtitle="Stored in your browser only.">
+      <div className="space-y-4">
+        <div className={provider === 'grok' ? '' : 'opacity-60'}>
+          <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 flex items-center gap-2 mb-1">
+            xAI Grok key
+            {provider === 'grok' && <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">Active</span>}
+          </label>
+          <input
+            type="password"
+            value={grokKey}
+            onChange={(e) => setGrokKey(e.target.value.trim())}
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-mono"
+            placeholder="xai-..."
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <p className="text-[11px] text-zinc-500 mt-1">
+            Get one at <a href={PROVIDER_DEFAULTS.grok.consoleUrl} target="_blank" rel="noreferrer" className="text-indigo-600 hover:text-pink-600">console.x.ai</a>.
+          </p>
+        </div>
+
+        <div className={provider === 'groq' ? '' : 'opacity-60'}>
+          <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 flex items-center gap-2 mb-1">
+            Groq key
+            {provider === 'groq' && <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">Active</span>}
+          </label>
+          <input
+            type="password"
+            value={groqKey}
+            onChange={(e) => setGroqKey(e.target.value.trim())}
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-mono"
+            placeholder="gsk_..."
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <p className="text-[11px] text-zinc-500 mt-1">
+            Get one at <a href={PROVIDER_DEFAULTS.groq.consoleUrl} target="_blank" rel="noreferrer" className="text-indigo-600 hover:text-pink-600">console.groq.com/keys</a>.
+          </p>
+        </div>
+
+        {provider === 'grok' && grokKey && !grokKey.startsWith('xai-') && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
+            ⚠️ Your key doesn&apos;t start with <code className="font-mono">xai-</code>. If it starts with <code className="font-mono">gsk_</code>, switch the provider to Groq above.
+          </p>
+        )}
+        {provider === 'groq' && groqKey && !groqKey.startsWith('gsk_') && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
+            ⚠️ Your key doesn&apos;t start with <code className="font-mono">gsk_</code>. If it starts with <code className="font-mono">xai-</code>, switch the provider to Grok above.
+          </p>
+        )}
+      </div>
+    </Card>
+
+    <Card title="Model" subtitle={`Pick which ${PROVIDER_DEFAULTS[provider].label} model to call.`}>
       <div className="space-y-3">
-        <p className="text-sm text-zinc-600">Paste your xAI Grok API key to enable the NPC simulator.</p>
-        <input
-          type="password"
-          value={grokKey}
-          onChange={(e) => setGrokKey(e.target.value)}
-          className="w-full rounded-3xl border border-zinc-200 bg-white px-4 py-3 text-sm"
-          placeholder="Enter Grok API key"
-        />
+        {provider === 'grok' ? (
+          <select
+            value={grokModel}
+            onChange={(e) => setGrokModel(e.target.value)}
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm"
+          >
+            {GROK_MODELS.map(m => (
+              <option key={m.id} value={m.id}>{m.label} — {m.hint}</option>
+            ))}
+          </select>
+        ) : (
+          <select
+            value={groqModel}
+            onChange={(e) => setGroqModel(e.target.value)}
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm"
+          >
+            {GROQ_MODELS.map(m => (
+              <option key={m.id} value={m.id}>{m.label} — {m.hint}</option>
+            ))}
+          </select>
+        )}
+        <p className="text-[11px] text-zinc-500">
+          Default: <code className="font-mono">{PROVIDER_DEFAULTS[provider].defaultModel}</code>. Changes apply on the next message.
+        </p>
       </div>
     </Card>
 
@@ -872,13 +994,14 @@ const SettingsView = ({
 );
 
 const AiTutorButton = ({
-  grokKey,
+  llmConfig,
   onClick,
 }: {
-  grokKey: string;
+  llmConfig: LlmConfig;
   onClick: () => void;
 }) => {
-  const hasKey = Boolean(grokKey);
+  const hasKey = Boolean(llmConfig.apiKey);
+  const providerLabel = PROVIDER_DEFAULTS[llmConfig.provider].label;
   return (
     <button
       onClick={onClick}
@@ -887,7 +1010,7 @@ const AiTutorButton = ({
         backgroundImage: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #ec4899 100%)',
         boxShadow: '0 10px 30px -10px rgba(124, 58, 237, 0.55), 0 1px 2px rgba(24,24,27,0.08)',
       }}
-      title={hasKey ? 'Open AI Tutor (Grok) — press T' : 'Add a Grok API key in Settings to chat with the Tutor'}
+      title={hasKey ? `Open AI Tutor (${providerLabel}) — press T` : `Add a ${providerLabel} API key in Settings to chat with the Tutor`}
     >
       <span className="relative flex h-5 w-5 items-center justify-center">
         <span className="absolute inset-0 rounded-full bg-white/20 group-hover:bg-white/30 transition" />
@@ -905,14 +1028,16 @@ const AiTutorButton = ({
 const AiTutorModal = ({
   isOpen,
   onClose,
-  grokKey,
+  llmConfig,
   osType,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  grokKey: string;
+  llmConfig: LlmConfig;
   osType: 'windows' | 'macos-linux';
 }) => {
+  const providerLabel = PROVIDER_DEFAULTS[llmConfig.provider].label;
+  const grokKey = llmConfig.apiKey;
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(false);
@@ -951,10 +1076,10 @@ Be terse, technical, supportive. Render commands in fenced code blocks, formatte
     setDraft('');
 
     try {
-      const response = await callGrok(systemPrompt, userMsg, messages);
+      const response = await callLlm(llmConfig, systemPrompt, userMsg, messages);
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to contact Grok');
+      setError(err instanceof Error ? err.message : `Unable to contact ${providerLabel}`);
     } finally {
       setLoading(false);
     }
@@ -982,6 +1107,9 @@ Be terse, technical, supportive. Render commands in fenced code blocks, formatte
           <div className="flex items-center gap-2">
             <Sparkles size={16} className="text-blue-400" />
             <h3 className="font-bold text-white">AI Tutor</h3>
+            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              {providerLabel}
+            </span>
             <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">
               {osType === 'windows' ? 'PowerShell' : 'Bash'}
             </span>
@@ -994,7 +1122,7 @@ Be terse, technical, supportive. Render commands in fenced code blocks, formatte
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {!grokKey ? (
             <div className="rounded-lg bg-amber-950/40 border border-amber-700/40 p-3 text-sm text-amber-200">
-              Add your xAI Grok API key in <strong>Settings</strong> to chat with the tutor. The key stays in your browser only.
+              Add your <strong>{providerLabel}</strong> API key in <strong>Settings</strong> to chat with the tutor. The key stays in your browser only.
             </div>
           ) : messages.length === 0 ? (
             <div className="text-sm text-zinc-400 space-y-2">
@@ -1031,7 +1159,7 @@ Be terse, technical, supportive. Render commands in fenced code blocks, formatte
               }
             }}
             rows={3}
-            placeholder={grokKey ? 'Ask about WP-03 prompt injection, evidence paths, etc. (Ctrl+Enter to send)' : 'Add a Grok API key in Settings first.'}
+            placeholder={grokKey ? 'Ask about WP-03 prompt injection, evidence paths, etc. (Ctrl+Enter to send)' : `Add a ${providerLabel} API key in Settings first.`}
             disabled={!grokKey || loading}
             className="w-full rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 placeholder-zinc-500 p-2 text-sm resize-none focus:border-blue-500 focus:outline-none disabled:opacity-60"
           />
@@ -1040,7 +1168,7 @@ Be terse, technical, supportive. Render commands in fenced code blocks, formatte
             disabled={loading || !draft.trim() || !grokKey}
             className="w-full rounded-lg bg-blue-600 text-white px-3 py-2 text-sm font-bold hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Sending…' : 'Send to Grok'}
+            {loading ? 'Sending…' : `Send to ${providerLabel}`}
           </button>
         </div>
       </motion.div>
@@ -1055,7 +1183,14 @@ Be terse, technical, supportive. Render commands in fenced code blocks, formatte
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('now');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(() => localStorage.getItem('auditai-selected-task') || null);
+  const [provider, setProvider] = useState<LlmProvider>(() => {
+    const saved = localStorage.getItem('auditai-llm-provider');
+    return saved === 'groq' || saved === 'grok' ? saved : 'grok';
+  });
   const [grokKey, setGrokKey] = useState(() => localStorage.getItem('auditai-grok-key') || localStorage.getItem('auditai-gemini-key') || '');
+  const [groqKey, setGroqKey] = useState(() => localStorage.getItem('auditai-groq-key') || '');
+  const [grokModel, setGrokModel] = useState(() => localStorage.getItem('auditai-grok-model') || PROVIDER_DEFAULTS.grok.defaultModel);
+  const [groqModel, setGroqModel] = useState(() => localStorage.getItem('auditai-groq-model') || PROVIDER_DEFAULTS.groq.defaultModel);
   const [activityDates, setActivityDates] = useState<string[]>(() => loadJsonArray('auditai-activity-dates'));
   const [lastExport, setLastExport] = useState<string | null>(() => localStorage.getItem('auditai-last-export'));
   const [referenceTab, setReferenceTab] = useState<ReferenceTab>('orgs');
@@ -1087,10 +1222,32 @@ export default function App() {
   }, [selectedTaskId]);
 
   useEffect(() => {
-    if (grokKey) {
-      localStorage.setItem('auditai-grok-key', grokKey);
-    }
+    if (grokKey) localStorage.setItem('auditai-grok-key', grokKey);
+    else localStorage.removeItem('auditai-grok-key');
   }, [grokKey]);
+
+  useEffect(() => {
+    if (groqKey) localStorage.setItem('auditai-groq-key', groqKey);
+    else localStorage.removeItem('auditai-groq-key');
+  }, [groqKey]);
+
+  useEffect(() => {
+    localStorage.setItem('auditai-llm-provider', provider);
+  }, [provider]);
+
+  useEffect(() => {
+    localStorage.setItem('auditai-grok-model', grokModel);
+  }, [grokModel]);
+
+  useEffect(() => {
+    localStorage.setItem('auditai-groq-model', groqModel);
+  }, [groqModel]);
+
+  const llmConfig: LlmConfig = useMemo(() => ({
+    provider,
+    apiKey: provider === 'grok' ? grokKey : groqKey,
+    model: provider === 'grok' ? grokModel : groqModel,
+  }), [provider, grokKey, groqKey, grokModel, groqModel]);
 
   useEffect(() => {
     localStorage.setItem('auditai-activity-dates', JSON.stringify(activityDates));
@@ -1369,13 +1526,21 @@ export default function App() {
               )}
 
               {currentView === 'npc' && (
-                <NpcSimView grokKey={grokKey} selectedTask={currentTask ?? nextTask ?? null} onActivity={trackActivity} />
+                <NpcSimView llmConfig={llmConfig} selectedTask={currentTask ?? nextTask ?? null} onActivity={trackActivity} />
               )}
 
               {currentView === 'settings' && (
                 <SettingsView
+                  provider={provider}
+                  setProvider={setProvider}
                   grokKey={grokKey}
                   setGrokKey={setGrokKey}
+                  groqKey={groqKey}
+                  setGroqKey={setGroqKey}
+                  grokModel={grokModel}
+                  setGrokModel={setGrokModel}
+                  groqModel={groqModel}
+                  setGroqModel={setGroqModel}
                   lastExport={lastExport}
                   onExportProgress={exportProgress}
                   onImportProgress={importProgress}
@@ -1394,14 +1559,14 @@ export default function App() {
         </div>
       </main>
 
-      <AiTutorButton grokKey={grokKey} onClick={() => setIsTutorOpen(true)} />
+      <AiTutorButton llmConfig={llmConfig} onClick={() => setIsTutorOpen(true)} />
 
       <AnimatePresence>
         {isTutorOpen && (
           <AiTutorModal
             isOpen={isTutorOpen}
             onClose={() => setIsTutorOpen(false)}
-            grokKey={grokKey}
+            llmConfig={llmConfig}
             osType={osType}
           />
         )}
