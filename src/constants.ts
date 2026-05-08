@@ -37,6 +37,15 @@ export interface ProgramPhase {
   deliverables: string[];
 }
 
+export interface StepDetail {
+  description: string;
+  commandWindows?: string;
+  commandMacLinux?: string;
+  whatItDoes: string;
+  whyWeDoIt: string;
+  realWorldAnalogy?: string;
+}
+
 export interface Task {
   id: string;
   workPaperId: string;
@@ -46,6 +55,7 @@ export interface Task {
   estimateMinutes: number;
   why: string;
   steps: string[];
+  stepDetails?: StepDetail[];
   command?: string;
   commandWindows?: string;
   commandMacLinux?: string;

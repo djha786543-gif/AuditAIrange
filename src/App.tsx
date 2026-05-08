@@ -322,6 +322,220 @@ const NowView = ({
   </div>
 );
 
+const NoviceTaskDetail = ({
+  task,
+  onToggleTask,
+  isCompleted,
+  osType,
+}: {
+  task: typeof TASKS[0];
+  onToggleTask: (taskId: string) => void;
+  isCompleted: boolean;
+  osType: 'windows' | 'macos-linux';
+}) => {
+  const [expandedStep, setExpandedStep] = useState<number | null>(null);
+
+  const stepDetails = task.stepDetails || task.steps.map((step, idx) => ({
+    description: step,
+    commandWindows: task.commandWindows,
+    commandMacLinux: task.commandMacLinux,
+    whatItDoes: 'See command to run section below.',
+    whyWeDoIt: 'See task description for context.',
+  }));
+
+  return (
+    <Card title={`${formatWpTitle(task.workPaperId)} · ${PHASE_LABELS[task.phase]}`} subtitle={task.title}>
+      <div className="space-y-6">
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-3 font-semibold">Why this task matters</p>
+          <p className="text-sm text-zinc-700 leading-relaxed">{task.why}</p>
+        </div>
+
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-3 font-semibold">Estimate & Details</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[10px] text-zinc-400">Time needed</p>
+              <p className="font-semibold text-zinc-900">{task.estimateMinutes} minutes</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-zinc-400">Work Paper</p>
+              <p className="font-semibold text-zinc-900">{formatWpTitle(task.workPaperId)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-zinc-200 pt-6">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">Step-by-step guide (Novice Mode)</p>
+            <span className="text-[9px] font-bold px-2 py-1 bg-purple-100 text-purple-700 rounded">ELI5 Mode</span>
+          </div>
+
+          <div className="space-y-3">
+            {stepDetails.map((detail, idx) => (
+              <div key={idx} className="border border-zinc-200 rounded-xl overflow-hidden hover:border-indigo-300 transition-colors">
+                <button
+                  onClick={() => setExpandedStep(expandedStep === idx ? null : idx)}
+                  className="w-full p-4 flex items-start gap-3 hover:bg-zinc-50 transition-colors text-left"
+                >
+                  <span className="text-lg font-bold text-indigo-600 shrink-0 mt-0.5">{idx + 1}.</span>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-zinc-900 text-sm">{detail.description}</h4>
+                    {expandedStep !== idx && (
+                      <p className="text-[12px] text-zinc-500 mt-1 line-clamp-1">Click to see the command and explanation</p>
+                    )}
+                  </div>
+                  <span className={`text-zinc-400 transition-transform shrink-0 ${expandedStep === idx ? 'rotate-180' : ''}`}>
+                    {expandedStep === idx ? '▲' : '▼'}
+                  </span>
+                </button>
+
+                <AnimatePresence>
+                  {expandedStep === idx && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="border-t border-zinc-100 bg-zinc-50 p-4 space-y-4"
+                    >
+                      {/* What it does */}
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">What this does</p>
+                        <p className="text-sm text-zinc-700 leading-relaxed bg-white p-3 rounded-lg border border-zinc-100">
+                          {detail.whatItDoes}
+                        </p>
+                      </div>
+
+                      {/* Why we do it */}
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">Why we're doing this</p>
+                        <p className="text-sm text-zinc-700 leading-relaxed bg-white p-3 rounded-lg border border-zinc-100">
+                          {detail.whyWeDoIt}
+                        </p>
+                      </div>
+
+                      {/* Real-world analogy */}
+                      {detail.realWorldAnalogy && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">Real-world analogy</p>
+                          <p className="text-sm text-zinc-700 italic bg-blue-50 p-3 rounded-lg border border-blue-100">
+                            {detail.realWorldAnalogy}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* OS Selector and Command */}
+                      {(detail.commandWindows || detail.commandMacLinux) && (
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">Command to run</p>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  /* This would be handled by parent if we needed OS switching per step */
+                                }}
+                                className={`text-[9px] px-2 py-1 rounded font-semibold transition-colors ${
+                                  osType === 'windows'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-zinc-200 text-zinc-700 hover:bg-zinc-300'
+                                }`}
+                              >
+                                Windows
+                              </button>
+                              <button
+                                onClick={() => {
+                                  /* OS switching handler */
+                                }}
+                                className={`text-[9px] px-2 py-1 rounded font-semibold transition-colors ${
+                                  osType === 'macos-linux'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-zinc-200 text-zinc-700 hover:bg-zinc-300'
+                                }`}
+                              >
+                                Mac/Linux
+                              </button>
+                            </div>
+                          </div>
+                          <CopyableCode
+                            label={`step ${idx + 1} command`}
+                            code={osType === 'windows' ? (detail.commandWindows || '') : (detail.commandMacLinux || '')}
+                          />
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Consolidated command block */}
+        {(task.commandWindows || task.commandMacLinux) && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">Complete command (all steps combined)</p>
+              <span className="text-[9px] font-bold px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                {osType === 'windows' ? 'Windows · PowerShell' : 'macOS / Linux · Bash'}
+              </span>
+            </div>
+            <CopyableCode
+              label="combined command"
+              code={(osType === 'windows' ? task.commandWindows : task.commandMacLinux) || ''}
+            />
+          </div>
+        )}
+
+        {(task.commandWindows || task.commandMacLinux || task.command || task.automationCommandWindows) && (
+          <div className="rounded-lg p-3 border bg-amber-50 border-amber-200">
+            <p className="text-[10px] uppercase tracking-wider text-amber-800 font-bold flex items-center gap-2 mb-1">
+              <AlertTriangle size={12} /> Terminal tip
+            </p>
+            <p className="text-xs text-amber-800">
+              Run these commands in your <strong>{osType === 'windows' ? 'PowerShell' : 'Terminal (bash/zsh)'}</strong>, <strong>NOT</strong> inside Python REPL (the prompt with <code className="bg-amber-200/60 px-1 rounded">&gt;&gt;&gt;</code>). If stuck in REPL, type <code className="bg-amber-200/60 px-1 rounded">exit()</code>.
+            </p>
+          </div>
+        )}
+
+        {task.expectedOutput && (
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-2 font-semibold">Expected output when done</p>
+            <p className="text-sm text-zinc-700 bg-zinc-50 p-3 rounded-lg font-mono border border-zinc-100">{task.expectedOutput}</p>
+          </div>
+        )}
+
+        {task.evidencePath && (
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-2 font-semibold">Where to save evidence</p>
+            <p className="text-sm text-zinc-700 font-mono bg-amber-50 p-3 rounded-lg border border-amber-200">{task.evidencePath}</p>
+          </div>
+        )}
+
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-2 font-semibold">Task is complete when...</p>
+          <p className="text-sm text-zinc-700 bg-emerald-50 p-3 rounded-lg border border-emerald-200">{task.doneCondition}</p>
+        </div>
+
+        <button
+          onClick={() => onToggleTask(task.id)}
+          className={`w-full rounded-full py-3 text-sm font-semibold transition-all duration-200 ${
+            isCompleted
+              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+              : 'text-white shadow-[0_8px_22px_-12px_rgba(79,70,229,0.5)] hover:-translate-y-0.5'
+          }`}
+          style={
+            !isCompleted
+              ? { backgroundImage: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #ec4899 100%)' }
+              : undefined
+          }
+        >
+          {isCompleted ? '✓ Mark incomplete' : 'Mark complete'}
+        </button>
+      </div>
+    </Card>
+  );
+};
+
 const TaskQueueView = ({
   tasks,
   completedTasks,
@@ -329,6 +543,7 @@ const TaskQueueView = ({
   onToggleTask,
   onSelectTask,
   osType,
+  noviceMode,
 }: {
   tasks: typeof TASKS;
   completedTasks: string[];
@@ -336,6 +551,7 @@ const TaskQueueView = ({
   onToggleTask: (taskId: string) => void;
   onSelectTask: (taskId: string) => void;
   osType: 'windows' | 'macos-linux';
+  noviceMode: boolean;
 }) => {
   const groups = Array.from(
     tasks.reduce((map, task) => {
@@ -405,7 +621,15 @@ const TaskQueueView = ({
 
       <div className="lg:col-span-2 min-w-0">
         {selectedTask ? (
-          <Card title={`${formatWpTitle(selectedTask.workPaperId)} · ${PHASE_LABELS[selectedTask.phase]}`} subtitle={selectedTask.title}>
+          noviceMode ? (
+            <NoviceTaskDetail 
+              task={selectedTask}
+              onToggleTask={onToggleTask}
+              isCompleted={isSelectedCompleted}
+              osType={osType}
+            />
+          ) : (
+            <Card title={`${formatWpTitle(selectedTask.workPaperId)} · ${PHASE_LABELS[selectedTask.phase]}`} subtitle={selectedTask.title}>
             <div className="space-y-6">
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-3 font-semibold">Why this task matters</p>
@@ -527,7 +751,8 @@ const TaskQueueView = ({
                 {isSelectedCompleted ? '✓ Mark incomplete' : 'Mark complete'}
               </button>
             </div>
-          </Card>
+            </Card>
+          )
         ) : (
           <Card title="Select a task" subtitle="Choose a task from the queue to see full details.">
             <p className="text-sm text-zinc-600">The right panel will show all task information including steps, commands, evidence paths, and completion criteria.</p>
@@ -1197,6 +1422,10 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
   const [isTutorOpen, setIsTutorOpen] = useState(false);
+  const [noviceMode, setNoviceMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('auditai-novice-mode');
+    return saved ? JSON.parse(saved) : false;
+  });
   const [osType, setOsType] = useState<'windows' | 'macos-linux'>(() => {
     const saved = localStorage.getItem('auditai-os-type');
     return (saved as 'windows' | 'macos-linux') || 'macos-linux';
@@ -1262,6 +1491,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('auditai-os-type', osType);
   }, [osType]);
+
+  useEffect(() => {
+    localStorage.setItem('auditai-novice-mode', JSON.stringify(noviceMode));
+  }, [noviceMode]);
 
   useEffect(() => {
     const existingGrok = localStorage.getItem('auditai-grok-key');
@@ -1478,7 +1711,18 @@ export default function App() {
           ))}
         </nav>
 
-        <div className="border-t border-zinc-100 pt-3 mt-3">
+        <div className="border-t border-zinc-100 pt-3 mt-3 space-y-2">
+          <button
+            onClick={() => setNoviceMode(!noviceMode)}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium ${
+              noviceMode
+                ? 'text-zinc-900 bg-gradient-to-r from-purple-50 via-white to-pink-50 shadow-[0_1px_2px_rgba(168,85,247,0.06),0_6px_18px_-10px_rgba(168,85,247,0.25)] border border-purple-100/70'
+                : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100/70'
+            }`}
+          >
+            <Sparkles size={17} className={noviceMode ? 'text-purple-600' : 'text-zinc-400'} />
+            <span>Novice Mode {noviceMode && '✓'}</span>
+          </button>
           <SidebarItem
             icon={Target}
             label="Settings"
@@ -1518,6 +1762,7 @@ export default function App() {
                   onToggleTask={toggleTask}
                   onSelectTask={onSelectTask}
                   osType={osType}
+                  noviceMode={noviceMode}
                 />
               )}
 

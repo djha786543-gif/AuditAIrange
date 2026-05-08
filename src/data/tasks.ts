@@ -17,6 +17,45 @@ export const TASKS: Task[] = [
       'Verify PATH and tool access for Docker, Ollama, and Garak',
       'Run commands in a Terminal or PowerShell shell, not inside a Python REPL (>>> prompt)'
     ],
+    stepDetails: [
+      {
+        description: 'Create the evidence folder structure for all work papers',
+        commandWindows: '1..15 | ForEach-Object { New-Item -ItemType Directory -Force -Path "07_evidence\\wp-$($_.ToString(\'D2\'))" | Out-Null }; New-Item -ItemType Directory -Force -Path "07_evidence\\wp-cap" | Out-Null',
+        commandMacLinux: 'mkdir -p 07_evidence/wp-{01..15} 07_evidence/wp-cap',
+        whatItDoes: 'This creates 15 folders (one for each work paper WP-01 through WP-15) plus one capstone folder (wp-cap). Each folder stores evidence like screenshots, logs, and reports for that work paper.',
+        whyWeDoIt: 'Having an organized folder structure ensures that all evidence is stored consistently and makes it easy to find what you need later when writing reports.',
+        realWorldAnalogy: 'Think of it like creating labeled file folders in a filing cabinet. Each work paper gets its own folder so nothing gets lost.'
+      },
+      {
+        description: 'Install Python 3.11+ and create a virtual environment',
+        commandWindows: 'python --version && python -m venv audit-env && .\\audit-env\\Scripts\\activate',
+        commandMacLinux: 'python3 --version && python3 -m venv audit-env && source audit-env/bin/activate',
+        whatItDoes: 'This checks your Python version, then creates an isolated workspace (virtual environment) where we can install audit tools without affecting your system Python. The "activate" step puts you inside that isolated workspace.',
+        whyWeDoIt: 'Virtual environments keep project dependencies separate and prevent conflicts between different projects or system packages. They make your system cleaner and audit setup more reproducible.',
+        realWorldAnalogy: 'Like setting up a clean, dedicated workbench just for this audit project—so your tools here don\'t interfere with other work.'
+      },
+      {
+        description: 'Install core packages: numpy, pandas, requests, promptfoo',
+        commandWindows: '.\\audit-env\\Scripts\\activate && pip install numpy pandas requests promptfoo',
+        commandMacLinux: 'source audit-env/bin/activate && pip install numpy pandas requests promptfoo',
+        whatItDoes: 'After entering your isolated environment, this command installs four essential Python libraries: numpy (math), pandas (data), requests (web calls), and promptfoo (LLM testing tool).',
+        whyWeDoIt: 'These packages let us analyze data, make API calls to test systems, and run red-team probes against AI models. They\'re the workbench tools for the audit.'
+      },
+      {
+        description: 'Verify PATH and tool access for Docker, Ollama, and Garak',
+        commandWindows: 'docker --version && ollama --version',
+        commandMacLinux: 'docker --version && ollama --version',
+        whatItDoes: 'This checks that Docker and Ollama are installed and accessible from your terminal. If either returns a version number, they\'re good to go.',
+        whyWeDoIt: 'Docker runs the lab containers (our virtual AI systems), and Ollama hosts local LLMs for testing. We need these installed before moving forward.'
+      },
+      {
+        description: 'Run commands in a Terminal or PowerShell shell, not inside a Python REPL',
+        commandWindows: 'Verify you see a prompt like "C:\\Users\\YourName\\" NOT ">>>"',
+        commandMacLinux: 'Verify you see a prompt like "user@host:~$" NOT ">>>"',
+        whatItDoes: 'This is a safety check. The REPL (>>> prompt) is for running Python code interactively, NOT for running system commands. If you\'re in the REPL, you must type exit() to leave it.',
+        whyWeDoIt: 'Many beginners accidentally stay in the Python REPL and then copy-paste terminal commands, which fails silently or causes confusion.'
+      }
+    ],
     commandWindows: 'python -m venv audit-env; .\\audit-env\\Scripts\\activate; pip install numpy pandas requests promptfoo',
     commandMacLinux: 'python -m venv audit-env && source audit-env/bin/activate && pip install numpy pandas requests promptfoo',
     automationCommandWindows: '1..15 | ForEach-Object { New-Item -ItemType Directory -Force -Path "07_evidence\\wp-$($_.ToString(\'D2\'))" | Out-Null }; New-Item -ItemType Directory -Force -Path "07_evidence\\wp-cap" | Out-Null',
@@ -40,6 +79,37 @@ export const TASKS: Task[] = [
       'Pull and load the primary LLMs used in the lab',
       'Capture screenshots or logs for service health status'
     ],
+    stepDetails: [
+      {
+        description: 'Start Docker compose for all services',
+        commandWindows: 'docker compose up -d',
+        commandMacLinux: 'docker compose up -d',
+        whatItDoes: 'This command reads the docker-compose.yml file and starts all 11 containers (Ollama + 10 SUTs) in the background (-d = detached mode). You get your terminal back immediately.',
+        whyWeDoIt: 'Our lab environment is made of containers. Starting them is like turning on the power to all the AI systems we\'re about to audit.'
+      },
+      {
+        description: 'Verify all 10 SUT containers are healthy',
+        commandWindows: 'docker compose ps',
+        commandMacLinux: 'docker compose ps',
+        whatItDoes: 'Lists all running containers and their status. Look for "healthy" or "Up" in the STATUS column. If you see "exited" or "unhealthy," there\'s a problem.',
+        whyWeDoIt: 'Container health tells us if our systems are actually running and reachable. If a container crashed, we find out here before wasting time trying to test a dead system.',
+        realWorldAnalogy: 'Like checking that all the lab equipment powers on before you start an experiment.'
+      },
+      {
+        description: 'Pull and load the primary LLMs used in the lab',
+        commandWindows: 'ollama pull llama2 && ollama pull mistral && ollama list',
+        commandMacLinux: 'ollama pull llama2 && ollama pull mistral && ollama list',
+        whatItDoes: 'Downloads and caches two LLM models (Llama and Mistral) so they\'re ready for testing. The "list" command shows all models you have locally.',
+        whyWeDoIt: 'These models power several of our SUTs (MedAssist, ChatBank, etc.). Pre-loading them saves time and ensures they\'re ready when we run probes.'
+      },
+      {
+        description: 'Capture screenshots or logs for service health status',
+        commandWindows: 'docker compose ps > 07_evidence/wp-01/service_health.log && cat 07_evidence/wp-01/service_health.log',
+        commandMacLinux: 'docker compose ps > 07_evidence/wp-01/service_health.log && cat 07_evidence/wp-01/service_health.log',
+        whatItDoes: 'Saves the container status to a file so we have proof of what was running. The cat command displays the file content to confirm it worked.',
+        whyWeDoIt: 'Audit work requires evidence. Storing the health check output in our evidence folder creates a documented record of lab readiness.'
+      }
+    ],
     commandWindows: 'docker compose up -d; docker compose ps; ollama list',
     commandMacLinux: 'docker compose up -d && docker compose ps && ollama ls',
     expectedOutput: 'All services healthy and LLM models loaded successfully',
@@ -60,6 +130,36 @@ export const TASKS: Task[] = [
       'Note any missing components or configuration gaps',
       'Create a short baseline findings summary'
     ],
+    stepDetails: [
+      {
+        description: 'Review service health and tool validation logs',
+        commandWindows: 'Get-ChildItem 07_evidence/wp-01/ | Select-Object Name, LastWriteTime',
+        commandMacLinux: 'ls -la 07_evidence/wp-01/',
+        whatItDoes: 'Lists all files in the evidence folder to see what logs were created. This verifies our evidence collection is working.',
+        whyWeDoIt: 'Before analyzing, we want to verify that our evidence collection script ran successfully and created the files we expected.'
+      },
+      {
+        description: 'Compare actual environment setup to the lab requirements',
+        commandWindows: 'type 07_evidence/wp-01/service_health.log',
+        commandMacLinux: 'cat 07_evidence/wp-01/service_health.log',
+        whatItDoes: 'Displays the service health log so you can visually inspect it against the architecture spec. Look for container names and UP status.',
+        whyWeDoIt: 'This is manual verification—the auditor\'s human judgment confirms machines are working as intended.'
+      },
+      {
+        description: 'Note any missing components or configuration gaps',
+        commandWindows: 'notepad 07_evidence/wp-01/baseline_findings.txt',
+        commandMacLinux: 'nano 07_evidence/wp-01/baseline_findings.txt',
+        whatItDoes: 'Opens a text editor where you document any gaps (e.g., "Garak not installed yet" or "Ollama models still downloading").',
+        whyWeDoIt: 'Recording gaps creates a baseline. Later, we\'ll verify they\'ve been fixed, which proves our audit is thorough.'
+      },
+      {
+        description: 'Create a short baseline findings summary',
+        commandWindows: '# Type: Lab is ready. All 11 containers running. Ollama models loaded. Garak pending installation.',
+        commandMacLinux: '# Type: Lab is ready. All 11 containers running. Ollama models loaded. Garak pending installation.',
+        whatItDoes: 'You write a paragraph summarizing the lab state (e.g., "3 of 5 tools installed, 10/10 containers running, no critical gaps").',
+        whyWeDoIt: 'This summary becomes Exhibit A in your work paper. It shows what was tested and confirms the lab was ready for deeper audit work.'
+      }
+    ],
     expectedOutput: 'Baseline findings summary that describes lab readiness and gaps',
     evidencePath: '07_evidence/wp-01/baseline_findings.txt',
     doneCondition: 'Baseline findings are documented and stored in the evidence folder.'
@@ -78,6 +178,36 @@ export const TASKS: Task[] = [
       'Highlight any initial gaps or risks',
       'Write the memo in the agreed audit template'
     ],
+    stepDetails: [
+      {
+        description: 'Summarize the lab architecture and tools in use',
+        commandWindows: 'code 06_workpapers/wp_01_lab_readiness_memo.md',
+        commandMacLinux: 'nano 06_workpapers/wp_01_lab_readiness_memo.md',
+        whatItDoes: 'Opens an editor to write your memo. Start by listing the 11 containers (Ollama + 10 SUTs) and the 8-10 tools you\'ve installed.',
+        whyWeDoIt: 'The memo is the first formal work paper. It documents your control environment—the foundation for all later findings.'
+      },
+      {
+        description: 'Document evidence sources and validation steps',
+        commandWindows: 'Reference service_health.log and env_setup.log files in your memo body.',
+        commandMacLinux: 'Reference service_health.log and env_setup.log files in your memo body.',
+        whatItDoes: 'Cite the actual log files and test commands you ran (with outputs) to prove your claims about lab readiness.',
+        whyWeDoIt: 'Audit standards require traceability. Every claim must link to evidence. "The lab was ready" is not sufficient; "The lab was ready (see Exhibit A: docker ps output)" is audit-grade.'
+      },
+      {
+        description: 'Highlight any initial gaps or risks',
+        commandWindows: 'List any tools not yet installed or containers that failed to start.',
+        commandMacLinux: 'List any tools not yet installed or containers that failed to start.',
+        whatItDoes: 'Write a "Gaps & Risks" section noting incomplete setup. Example: "Garak installation deferred; PyRIT not yet installed. No impact on Week 1 smoke tests."',
+        whyWeDoIt: 'Documenting known gaps up front shows diligence and reduces surprise later. It also proves we thought about what could go wrong.'
+      },
+      {
+        description: 'Write the memo in the agreed audit template',
+        commandWindows: 'Follow the format: TO: [Audit File], FROM: [You], DATE: [Today], RE: Lab Readiness Memo',
+        commandMacLinux: 'Follow the format: TO: [Audit File], FROM: [You], DATE: [Today], RE: Lab Readiness Memo',
+        whatItDoes: 'Use a formal memo structure with header, objective, findings, and conclusion. Aim for 2–3 pages.',
+        whyWeDoIt: 'Professional formatting ensures the work paper looks credible and is easy for reviewers to follow.'
+      }
+    ],
     expectedOutput: 'A complete Lab Readiness Memo stored in working files',
     evidencePath: '07_evidence/wp-01/lab_readiness_memo.md',
     doneCondition: 'A draft memo exists and references tool validation evidence.'
@@ -95,6 +225,36 @@ export const TASKS: Task[] = [
       'Capture evidence links for each criterion',
       'Run one NPC chat exchange defending the memo',
       'Save the NPC exchange to the WP log'
+    ],
+    stepDetails: [
+      {
+        description: 'Score the memo against the rubric criteria',
+        commandWindows: 'Open the self-assessment rubric in 06_workpapers/00_templates/self_assessment_rubric.md',
+        commandMacLinux: 'cat 06_workpapers/00_templates/self_assessment_rubric.md',
+        whatItDoes: 'Review the rubric (a checklist of quality standards) and score your memo 1–5 on each criterion: completeness, evidence quality, clarity, risk ID, and recommendations.',
+        whyWeDoIt: 'Self-scoring teaches you what audit-grade work looks like and reveals gaps before a real reviewer sees them.'
+      },
+      {
+        description: 'Capture evidence links for each criterion',
+        commandWindows: 'For each score, write: "[Criterion]: [Score/5] - Evidence: [file/section reference]"',
+        commandMacLinux: 'For each score, write: "[Criterion]: [Score/5] - Evidence: [file/section reference]"',
+        whatItDoes: 'Create a scorecard linking each rubric criterion to proof in your memo. Example: "Completeness: 4/5 - Evidence: Memo Exhibit A lists 10/11 containers. Only missing Ollama status."',
+        whyWeDoIt: 'Traceability again. If your memo scores high, you need to show why. If it scores low, you identify what to improve.'
+      },
+      {
+        description: 'Run one NPC chat exchange defending the memo',
+        commandWindows: 'In the "NPC Practice" view, select a persona (e.g., "Sarah, Risk Officer") and ask: "Is my lab readiness memo audit-grade?"',
+        commandMacLinux: 'In the "NPC Practice" view, select a persona (e.g., "Sarah, Risk Officer") and ask: "Is my lab readiness memo audit-grade?"',
+        whatItDoes: 'Simulates a stakeholder challenging your work. You respond to their pushback, defending your evidence and findings.',
+        whyWeDoIt: 'Real audits have defenders and challengers. Practicing pushback builds confidence and helps you anticipate weak points in your logic.'
+      },
+      {
+        description: 'Save the NPC exchange to the WP log',
+        commandWindows: 'Copy the chat history and paste it into 07_evidence/wp-01/npc_defense.log',
+        commandMacLinux: 'Copy the chat history and paste it into 07_evidence/wp-01/npc_defense.log',
+        whatItDoes: 'Creates permanent record of your defense. Proves you thought critically about your work and engaged with skeptical stakeholders.',
+        whyWeDoIt: 'Work paper completeness includes not just the memo, but evidence of rigorous self-review and defensibility.'
+      }
     ],
     expectedOutput: 'Rubric scores, evidence references, and at least one NPC defense log',
     evidencePath: '07_evidence/wp-01/npc_defense.log',
