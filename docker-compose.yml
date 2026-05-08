@@ -1,0 +1,114 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: auditai_ollama
+    restart: unless-stopped
+    ports:
+      - '11434:11434'
+    environment:
+      OLLAMA_API_KEY: '${OLLAMA_API_KEY:-}'
+    healthcheck:
+      test: ['CMD', 'sh', '-c', 'curl -f http://localhost:11434/v1/models || exit 1']
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  microsoft_playground:
+    image: nginx:stable-alpine
+    container_name: auditai_microsoft_playground
+    restart: unless-stopped
+    ports:
+      - '8080:80'
+    labels:
+      org.auditai.service: 'microsoft-playground'
+
+  monitoring:
+    image: grafana/grafana-oss:latest
+    container_name: auditai_monitoring
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+
+  medassist:
+    image: nginx:stable-alpine
+    container_name: auditai_medassist
+    restart: unless-stopped
+    ports:
+      - '5101:80'
+    depends_on:
+      - ollama
+
+  imagedx:
+    image: nginx:stable-alpine
+    container_name: auditai_imagedx
+    restart: unless-stopped
+    ports:
+      - '5102:80'
+
+  claimsnet:
+    image: nginx:stable-alpine
+    container_name: auditai_claimsnet
+    restart: unless-stopped
+    ports:
+      - '5103:80'
+
+  patientflow:
+    image: nginx:stable-alpine
+    container_name: auditai_patientflow
+    restart: unless-stopped
+    ports:
+      - '5104:80'
+
+  talentmatch:
+    image: nginx:stable-alpine
+    container_name: auditai_talentmatch
+    restart: unless-stopped
+    ports:
+      - '5105:80'
+
+  chatbank:
+    image: nginx:stable-alpine
+    container_name: auditai_chatbank
+    restart: unless-stopped
+    ports:
+      - '5106:80'
+    depends_on:
+      - ollama
+
+  frauddetect:
+    image: nginx:stable-alpine
+    container_name: auditai_frauddetect
+    restart: unless-stopped
+    ports:
+      - '5107:80'
+
+  creditassist:
+    image: nginx:stable-alpine
+    container_name: auditai_creditassist
+    restart: unless-stopped
+    ports:
+      - '5108:80'
+
+  supportbot:
+    image: nginx:stable-alpine
+    container_name: auditai_supportbot
+    restart: unless-stopped
+    ports:
+      - '5109:80'
+    depends_on:
+      - ollama
+
+  analyticscopilot:
+    image: nginx:stable-alpine
+    container_name: auditai_analyticscopilot
+    restart: unless-stopped
+    ports:
+      - '5110:80'
+    depends_on:
+      - ollama
+
+networks:
+  default:
+    name: auditai_range_network
