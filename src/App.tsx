@@ -565,16 +565,16 @@ const TaskQueueView = ({
   const isSelectedCompleted = selectedTask && completedTasks.includes(selectedTask.id);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-20 w-full">
-      <div className="lg:col-span-1 space-y-6 min-w-0">
-        <div className="lg:sticky lg:top-0 z-20 pb-4 mb-2 bg-gradient-to-b from-[#fafafa] via-[#fafafa]/95 to-transparent backdrop-blur-md">
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] gap-7 mb-20 w-full">
+      <div className="space-y-6 min-w-0">
+        <div className="lg:sticky lg:top-6 z-20 p-5 rounded-[2rem] border border-zinc-200/70 bg-white/95 shadow-[0_12px_40px_-28px_rgba(15,23,42,0.35)]">
           <p className="eyebrow">Task queue</p>
-          <h1 className="text-3xl font-bold mt-1.5 tracking-tight gradient-text leading-tight">
-            Complete tasks at your own pace.
-          </h1>
-          <p className="text-sm text-zinc-500 mt-3">Tap a task to see full details.</p>
+          <h2 className="text-2xl font-semibold mt-2 tracking-tight text-slate-900">
+            Your current workflow
+          </h2>
+          <p className="text-sm text-zinc-500 mt-2">Select a work paper to see details and commands in the main panel.</p>
         </div>
-        <div className="space-y-6 max-h-[calc(100vh-220px)] overflow-y-auto pr-2">
+        <div className="space-y-6 max-h-[calc(100vh-210px)] overflow-y-auto pr-2">
           {groups.map(([workPaperId, groupTasks]) => {
             const completedCount = groupTasks.filter(task => completedTasks.includes(task.id)).length;
             return (
@@ -620,7 +620,7 @@ const TaskQueueView = ({
         </div>
       </div>
 
-      <div className="lg:col-span-2 min-w-0">
+      <div className="min-w-0">
         {selectedTask ? (
           noviceMode ? (
             <NoviceTaskDetail 
@@ -631,7 +631,7 @@ const TaskQueueView = ({
             />
           ) : (
             <Card title={`${formatWpTitle(selectedTask.workPaperId)} · ${PHASE_LABELS[selectedTask.phase]}`} subtitle={selectedTask.title}>
-            <div className="space-y-6">
+              <div className="space-y-6">
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-3 font-semibold">Why this task matters</p>
                 <p className="text-sm text-zinc-700 leading-relaxed">{selectedTask.why}</p>
