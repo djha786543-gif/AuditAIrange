@@ -13,11 +13,12 @@
   }
 
   .app-canvas {
-    background-color: #fafafa;
+    background-color: #f8fafc;
     background-image:
-      radial-gradient(at 8% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 45%),
-      radial-gradient(at 92% 12%, rgba(244, 114, 182, 0.06) 0px, transparent 50%),
-      radial-gradient(at 50% 100%, rgba(56, 189, 248, 0.07) 0px, transparent 55%);
+      radial-gradient(circle at 10% 5%, rgba(79, 70, 229, 0.14) 0px, transparent 40%),
+      radial-gradient(circle at 92% 12%, rgba(236, 72, 153, 0.12) 0px, transparent 40%),
+      radial-gradient(circle at 50% 95%, rgba(56, 189, 248, 0.09) 0px, transparent 45%),
+      linear-gradient(180deg, #ffffff 0%, #eef2ff 55%, #fdf2f8 100%);
   }
 }
 
@@ -27,7 +28,7 @@
   }
 
   .soft-card {
-    @apply bg-white/80 backdrop-blur-sm border border-zinc-200/70 rounded-2xl shadow-[0_1px_2px_rgba(24,24,27,0.04),0_8px_24px_-12px_rgba(24,24,27,0.08)];
+    @apply bg-white/95 backdrop-blur-xl border border-zinc-200/60 rounded-[1.75rem] shadow-[0_18px_50px_-30px_rgba(15,23,42,0.18),0_2px_12px_-2px_rgba(15,23,42,0.08)];
   }
 
   .gradient-text {
@@ -39,7 +40,7 @@
   }
 
   .eyebrow {
-    @apply text-xs font-semibold uppercase tracking-[0.22em] text-indigo-600/90;
+    @apply text-xs font-semibold uppercase tracking-[0.22em] text-indigo-700/95;
   }
 
   .btn-primary {
@@ -52,8 +53,8 @@
   }
 
   .btn-accent {
-    @apply inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200;
-    background-image: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #ec4899 100%);
+    @apply inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-xl transition-all duration-200;
+    background-image: linear-gradient(135deg, #5b21b6 0%, #8b5cf6 45%, #ec4899 100%);
   }
   .btn-accent:hover {
     box-shadow: 0 10px 28px -10px rgba(124, 58, 237, 0.55);

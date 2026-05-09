@@ -582,7 +582,7 @@ const TaskQueueView = ({
                 key={workPaperId}
                 title={formatWpTitle(workPaperId)}
                 subtitle={`${completedCount}/${groupTasks.length} complete`}
-                className="!p-3"
+                className="!p-4"
               >
                 <div className="space-y-2">
                   {groupTasks.map(task => {
@@ -593,10 +593,10 @@ const TaskQueueView = ({
                         key={task.id}
                         type="button"
                         onClick={() => onSelectTask(task.id)}
-                        className={`group w-full text-left p-3 rounded-xl border transition-all duration-200 text-xs ${
+                        className={`group w-full text-left p-4 rounded-3xl border transition-all duration-200 text-xs ${
                           isSelected
-                            ? 'border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-pink-50 shadow-[0_1px_2px_rgba(79,70,229,0.08),0_8px_22px_-12px_rgba(79,70,229,0.35)]'
-                            : 'border-zinc-200/70 bg-white/80 hover:border-indigo-200 hover:bg-white hover:shadow-sm'
+                            ? 'border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-pink-50 shadow-[0_2px_6px_rgba(79,70,229,0.12),0_12px_30px_-18px_rgba(79,70,229,0.20)]'
+                            : 'border-zinc-200/70 bg-white/90 hover:border-indigo-200 hover:bg-white hover:shadow-sm'
                         }`}
                       >
                         <p className={`text-[9px] uppercase font-semibold tracking-wider mb-1 ${isSelected ? 'text-indigo-600' : 'text-zinc-400 group-hover:text-indigo-500'}`}>
@@ -605,8 +605,9 @@ const TaskQueueView = ({
                         <h4 className={`font-semibold line-clamp-2 ${isCompleted ? 'text-zinc-400 line-through' : 'text-zinc-900'}`}>
                           {task.title}
                         </h4>
-                        <p className="text-[10px] text-zinc-500 mt-2 flex items-center gap-1">
-                          <span className="inline-block h-1 w-1 rounded-full bg-zinc-400" /> {task.estimateMinutes} min
+                        <p className="text-[10px] text-zinc-500 mt-2 flex items-center gap-2">
+                          <span className="inline-flex shrink-0 h-1.5 w-1.5 rounded-full bg-zinc-400 mt-[2px]" />
+                          <span>{task.estimateMinutes} min</span>
                           {isCompleted && <span className="ml-auto text-emerald-600 font-semibold">✓ done</span>}
                         </p>
                       </button>
@@ -1071,7 +1072,7 @@ const SettingsView = ({
       </div>
     </Card>
 
-    <Card title="AI provider" subtitle="Choose which LLM powers the Tutor and NPC simulator.">
+    <Card title="Provider settings" subtitle="Choose which model powers the coach and NPC simulator.">
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           {(['grok', 'groq'] as const).map(p => {
@@ -1235,13 +1236,13 @@ const AiTutorButton = ({
         backgroundImage: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #ec4899 100%)',
         boxShadow: '0 10px 30px -10px rgba(124, 58, 237, 0.55), 0 1px 2px rgba(24,24,27,0.08)',
       }}
-      title={hasKey ? `Open AI Tutor (${providerLabel}) — press T` : `Add a ${providerLabel} API key in Settings to chat with the Tutor`}
+      title={hasKey ? `Open Audit Coach (${providerLabel}) — press T` : `Add a ${providerLabel} API key in Settings to chat with the coach`}
     >
       <span className="relative flex h-5 w-5 items-center justify-center">
         <span className="absolute inset-0 rounded-full bg-white/20 group-hover:bg-white/30 transition" />
         <Sparkles size={13} className="relative" />
       </span>
-      {hasKey ? 'Ask Tutor' : 'Set up Tutor'}
+      {hasKey ? 'Ask Coach' : 'Set up Coach'}
       {!hasKey && (
         <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-amber-400 ring-2 ring-white animate-pulse" />
       )}
@@ -1274,7 +1275,7 @@ const AiTutorModal = ({
       .join('\n');
     const osLabel = osType === 'windows' ? 'Windows / PowerShell (use backslashes and `;` separators; activate venv with `.\\audit-env\\Scripts\\activate`)' : 'macOS / Linux / Bash (use forward slashes and `&&` separators; activate venv with `source audit-env/bin/activate`)';
 
-    return `You are the AuditAI Range Tutor — an expert helping a self-directed AI auditor work through a 16-week program of 15 work papers plus a capstone.
+    return `You are the Audit Range Coach — an expert helping a self-directed auditor work through a 16-week program of 15 work papers plus a capstone.
 
 # Work Papers
 ${workPapersList}
@@ -1331,7 +1332,7 @@ Be terse, technical, supportive. Render commands in fenced code blocks, formatte
         <div className="border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles size={16} className="text-blue-400" />
-            <h3 className="font-bold text-white">AI Tutor</h3>
+            <h3 className="font-bold text-white">Audit Coach</h3>
             <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
               {providerLabel}
             </span>
@@ -1339,7 +1340,7 @@ Be terse, technical, supportive. Render commands in fenced code blocks, formatte
               {osType === 'windows' ? 'PowerShell' : 'Bash'}
             </span>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white" aria-label="Close tutor">
+          <button onClick={onClose} className="text-zinc-500 hover:text-white" aria-label="Close coach">
             <X size={18} />
           </button>
         </div>
@@ -1347,7 +1348,7 @@ Be terse, technical, supportive. Render commands in fenced code blocks, formatte
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {!grokKey ? (
             <div className="rounded-lg bg-amber-950/40 border border-amber-700/40 p-3 text-sm text-amber-200">
-              Add your <strong>{providerLabel}</strong> API key in <strong>Settings</strong> to chat with the tutor. The key stays in your browser only.
+              Add your <strong>{providerLabel}</strong> API key in <strong>Settings</strong> to chat with the coach. The key stays in your browser only.
             </div>
           ) : messages.length === 0 ? (
             <div className="text-sm text-zinc-400 space-y-2">
@@ -1363,13 +1364,13 @@ Be terse, technical, supportive. Render commands in fenced code blocks, formatte
                 }`}
               >
                 <p className="font-semibold text-[10px] uppercase tracking-wider text-zinc-400 mb-1">
-                  {msg.role === 'assistant' ? 'Tutor' : 'You'}
+                  {msg.role === 'assistant' ? 'Coach' : 'You'}
                 </p>
                 <p className="whitespace-pre-wrap text-zinc-100">{msg.content}</p>
               </div>
             ))
           )}
-          {loading && <p className="text-xs text-zinc-500 italic">Tutor is thinking…</p>}
+          {loading && <p className="text-xs text-zinc-500 italic">Coach is thinking…</p>}
           {error && <p className="text-xs text-rose-400">{error}</p>}
         </div>
 
@@ -1691,9 +1692,9 @@ export default function App() {
                 style={{ backgroundImage: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #ec4899 100%)' }}>
             <ShieldAlert size={16} />
           </span>
-          <span className="font-bold tracking-tight text-lg text-zinc-900">AuditAI</span>
+          <span className="font-bold tracking-tight text-lg text-zinc-900">Audit Range</span>
           <span className="text-[9px] font-bold bg-gradient-to-r from-indigo-100 via-fuchsia-100 to-pink-100 text-indigo-700 px-1.5 py-0.5 rounded ml-auto tracking-wider">
-            RANGE
+            PORTAL
           </span>
         </div>
 
