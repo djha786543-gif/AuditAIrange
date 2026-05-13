@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, Fragment, useMemo, type ChangeEvent } from 'react';
+import { useState, useEffect, Fragment, useMemo, useRef, type ChangeEvent, type ReactNode } from 'react';
 import {
   LayoutDashboard,
   ClipboardCheck,
@@ -23,6 +23,7 @@ import {
   Copy,
   Check,
   Sparkles,
+  type LucideIcon,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -36,6 +37,7 @@ import {
 } from './constants';
 import { callLlm, PROVIDER_DEFAULTS, GROQ_MODELS, GROK_MODELS, type LlmConfig, type LlmProvider } from './lib/llm.ts';
 import { TASKS } from './data/tasks.ts';
+import { DEMO_NPC_RESPONSES } from './data/demo-npc-responses.ts';
 
 // ============================================================
 // TYPES
@@ -82,18 +84,12 @@ function loadWorkpapers(): Record<string, WorkPaperRecord> {
   }
 }
 
-function formatWpTitle(workPaperId: string) {
-  return workPaperId.toUpperCase().replace('WP-', 'WP ');
-}
+const APP_VERSION = '1.1';
+const SCHEMA_VERSION = 2;
 
-function getPhaseLabel(phase: string) {
-  return {
-    setup: 'Setup',
-    execute: 'Execute',
-    analyze: 'Analyze',
-    write: 'Write',
-    grade: 'Grade',
-  }[phase as keyof typeof PHASE_LABELS] ?? phase;
+function formatWpTitle(workPaperId: string) {
+  if (workPaperId === 'wp-cap') return 'Capstone';
+  return workPaperId.toUpperCase().replace('WP-', 'WP ');
 }
 
 const PHASE_LABELS = {
@@ -104,21 +100,57 @@ const PHASE_LABELS = {
   grade: 'Grade',
 } as const;
 
+function useModalFocusTrap(isOpen: boolean, onClose: () => void) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    const container = containerRef.current;
+    if (!container) return;
+    const focusables = container.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    first?.focus();
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab' || focusables.length === 0) return;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
+  return containerRef;
+}
+
 // ============================================================
 // UI COMPONENTS
 // ============================================================
 
-function SidebarItem(props: {
-  icon: any;
+interface SidebarItemProps {
+  icon: LucideIcon;
   label: string;
   active: boolean;
   onClick: () => void;
   badge?: number;
-}) {
+}
+
+function SidebarItem(props: SidebarItemProps) {
   const { icon: Icon, label, active, onClick, badge } = props;
   return (
     <button
       onClick={onClick}
+      aria-current={active ? 'page' : undefined}
       className={`group relative w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all duration-200 ${
         active
           ? 'text-zinc-900 bg-gradient-to-r from-indigo-50 via-white to-pink-50 shadow-[0_1px_2px_rgba(79,70,229,0.06),0_6px_18px_-10px_rgba(79,70,229,0.25)] border border-indigo-100/70'
@@ -143,7 +175,15 @@ function SidebarItem(props: {
   );
 }
 
-const Card = ({ children, title, subtitle, className = '', action }: any) => (
+interface CardProps {
+  children?: ReactNode;
+  title?: string;
+  subtitle?: string;
+  className?: string;
+  action?: ReactNode;
+}
+
+const Card = ({ children, title, subtitle, className = '', action }: CardProps) => (
   <div
     className={`soft-card overflow-hidden transition-all duration-300 hover:shadow-[0_2px_4px_rgba(24,24,27,0.04),0_18px_36px_-18px_rgba(24,24,27,0.18)] hover:border-zinc-300/70 ${className}`}
   >
@@ -228,6 +268,8 @@ const NowView = ({
   completedWPs,
   totalWPs,
   onJumpToTask,
+  showIntro,
+  onDismissIntro,
 }: {
   nextTask?: typeof TASKS[0];
   upcomingTasks: typeof TASKS;
@@ -236,8 +278,31 @@ const NowView = ({
   completedWPs: number;
   totalWPs: number;
   onJumpToTask: (taskId: string) => void;
+  showIntro: boolean;
+  onDismissIntro: () => void;
 }) => (
   <div className="space-y-6">
+    {showIntro && (
+      <div className="rounded-3xl border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-pink-50 p-6 flex flex-col sm:flex-row gap-4 sm:items-start">
+        <div className="flex-1 space-y-2 text-sm text-zinc-700">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-indigo-700">Welcome</p>
+          <p>
+            This is <strong>AuditAI Range</strong>, a 16-week AI audit program with 15 work papers across 3 fictional orgs
+            (Helix Health, Stellar Bank, Nimbus AI).
+          </p>
+          <p>
+            Toggle <strong>Novice Mode</strong> in the sidebar for step-by-step explanations. Try <strong>Demo Mode</strong> in
+            NPC Practice to see stakeholder pushback without an API key.
+          </p>
+        </div>
+        <button
+          onClick={onDismissIntro}
+          className="self-start inline-flex items-center gap-1 rounded-full bg-zinc-900 px-4 py-2 text-xs font-bold text-white hover:bg-zinc-800"
+        >
+          Got it
+        </button>
+      </div>
+    )}
     <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div>
         <p className="eyebrow">What&apos;s Next</p>
@@ -429,33 +494,15 @@ const NoviceTaskDetail = ({
                         <div>
                           <div className="flex items-center justify-between mb-3">
                             <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">Command to run</p>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => {
-                                  /* This would be handled by parent if we needed OS switching per step */
-                                }}
-                                className={`text-[9px] px-2 py-1 rounded font-semibold transition-colors ${
-                                  osType === 'windows'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-zinc-200 text-zinc-700 hover:bg-zinc-300'
-                                }`}
-                              >
-                                Windows
-                              </button>
-                              <button
-                                onClick={() => {
-                                  /* OS switching handler */
-                                }}
-                                className={`text-[9px] px-2 py-1 rounded font-semibold transition-colors ${
-                                  osType === 'macos-linux'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-zinc-200 text-zinc-700 hover:bg-zinc-300'
-                                }`}
-                              >
-                                Mac/Linux
-                              </button>
-                            </div>
+                            <span className="text-[10px] text-zinc-500">
+                              Showing {osType === 'windows' ? 'Windows · PowerShell' : 'macOS / Linux · Bash'} — change in Settings
+                            </span>
                           </div>
+                          {task.commandIsIllustrative && (
+                            <span className="inline-flex items-center gap-1 mb-3 rounded-full bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-800">
+                              Illustrative — see README
+                            </span>
+                          )}
                           <CopyableCode
                             label={`step ${idx + 1} command`}
                             code={osType === 'windows' ? (detail.commandWindows || '') : (detail.commandMacLinux || '')}
@@ -479,6 +526,11 @@ const NoviceTaskDetail = ({
                 {osType === 'windows' ? 'Windows · PowerShell' : 'macOS / Linux · Bash'}
               </span>
             </div>
+            {task.commandIsIllustrative && (
+              <span className="inline-flex items-center gap-1 mb-3 rounded-full bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-800">
+                Illustrative — see README
+              </span>
+            )}
             <CopyableCode
               label="combined command"
               code={(osType === 'windows' ? task.commandWindows : task.commandMacLinux) || ''}
@@ -578,8 +630,8 @@ const TaskQueueView = ({
           {groups.map(([workPaperId, groupTasks]) => {
             const completedCount = groupTasks.filter(task => completedTasks.includes(task.id)).length;
             return (
+              <Fragment key={workPaperId}>
               <Card
-                key={workPaperId}
                 title={formatWpTitle(workPaperId)}
                 subtitle={`${completedCount}/${groupTasks.length} complete`}
                 className="!p-4"
@@ -615,6 +667,7 @@ const TaskQueueView = ({
                   })}
                 </div>
               </Card>
+              </Fragment>
             );
           })}
         </div>
@@ -800,7 +853,8 @@ const ReferenceView = ({
     {tab === 'orgs' && (
       <div className="grid gap-4 xl:grid-cols-3">
         {ORGANIZATIONS.map(org => (
-          <Card key={org.id} title={org.name} subtitle={org.industry}>
+          <Fragment key={org.id}>
+          <Card title={org.name} subtitle={org.industry}>
             <div className="text-sm text-zinc-600 space-y-3">
               <p><strong>Size:</strong> {org.size}</p>
               <p><strong>Region:</strong> {org.geography}</p>
@@ -808,6 +862,7 @@ const ReferenceView = ({
               <p>{org.context}</p>
             </div>
           </Card>
+          </Fragment>
         ))}
       </div>
     )}
@@ -815,7 +870,8 @@ const ReferenceView = ({
     {tab === 'suts' && (
       <div className="grid gap-4 xl:grid-cols-2">
         {SUTS.map(sut => (
-          <Card key={sut.id} title={sut.name} subtitle={sut.type}>
+          <Fragment key={sut.id}>
+          <Card title={sut.name} subtitle={sut.type}>
             <div className="text-sm text-zinc-600 space-y-2">
               <p><strong>Org:</strong> {sut.org}</p>
               <p><strong>Risk tier:</strong> {sut.riskTier}</p>
@@ -823,6 +879,7 @@ const ReferenceView = ({
               <p><strong>Build approach:</strong> {sut.buildApproach}</p>
             </div>
           </Card>
+          </Fragment>
         ))}
       </div>
     )}
@@ -830,7 +887,8 @@ const ReferenceView = ({
     {tab === 'tools' && (
       <div className="grid gap-4 xl:grid-cols-2">
         {TOOLS.map(tool => (
-          <Card key={tool.name} title={tool.name} subtitle={tool.category}>
+          <Fragment key={tool.name}>
+          <Card title={tool.name} subtitle={tool.category}>
             <div className="text-sm text-zinc-600 space-y-2">
               <p>{tool.purpose}</p>
               <p><strong>Phase:</strong> {tool.phase}</p>
@@ -842,6 +900,7 @@ const ReferenceView = ({
               )}
             </div>
           </Card>
+          </Fragment>
         ))}
       </div>
     )}
@@ -890,8 +949,12 @@ const NpcSimView = ({
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
+  const [demoIndex, setDemoIndex] = useState(0);
 
   const persona = NPC_PERSONAS.find(p => p.id === personaId) ?? NPC_PERSONAS[0];
+  const demoScenario = DEMO_NPC_RESPONSES.find(demo => demo.personaId === personaId);
+  const isDemoComplete = demoMode && demoScenario ? demoIndex >= demoScenario.exchanges.length : false;
 
   const openChat = async () => {
     if (!draft.trim()) return;
@@ -918,15 +981,24 @@ const NpcSimView = ({
     }
   };
 
+  const handleDemoNext = () => {
+    if (!demoScenario || isDemoComplete) return;
+    const nextMessage = demoScenario.exchanges[demoIndex];
+    setHistory(prev => [...prev, nextMessage]);
+    setDemoIndex(demoIndex + 1);
+    setError(null);
+    onActivity();
+  };
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="eyebrow">NPC practice</p>
           <h1 className="text-3xl font-bold mt-1.5 tracking-tight gradient-text leading-tight">
-            Practice audit defense with Grok.
+            Practice audit defense with a coach.
           </h1>
-          <p className="text-sm text-zinc-500 max-w-2xl mt-2">Select a persona and ask for feedback on your memo, findings, or risk recommendations.</p>
+          <p className="text-sm text-zinc-500 max-w-2xl mt-2">Select a persona and use Demo Mode for scripted exchanges without an API key.</p>
         </div>
         <div className="rounded-3xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
           <p className="font-semibold">Selected persona</p>
@@ -934,32 +1006,62 @@ const NpcSimView = ({
         </div>
       </header>
 
-      {!llmConfig.apiKey ? (
-        <Card title={`${providerLabel} key required`} subtitle={`Enter your ${providerLabel} API key in Settings to use this simulator.`}>
-          <p className="text-sm text-zinc-600">NPC simulation needs a live {providerLabel} API key. It is stored in your browser only.</p>
-        </Card>
-      ) : (
-        <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
-          <Card title="Persona" subtitle="Choose the stakeholder role for pushback.">
-            <div className="space-y-4">
-              <select
-                value={personaId}
-                onChange={e => setPersonaId(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm"
-              >
-                {NPC_PERSONAS.map(personaOption => (
-                  <option key={personaOption.id} value={personaOption.id}>{personaOption.name}</option>
-                ))}
-              </select>
-              <div className="text-sm text-zinc-600 space-y-2">
-                <p><strong>Role:</strong> {persona.role}</p>
-                <p><strong>Context:</strong> {persona.openingContext}</p>
-                <p><strong>Pushback style:</strong> {persona.pushback}</p>
-              </div>
-            </div>
-          </Card>
-
+      <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
+        <Card title="Persona" subtitle="Choose the stakeholder role for pushback.">
           <div className="space-y-4">
+            <select
+              value={personaId}
+              onChange={e => setPersonaId(e.target.value)}
+              className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm"
+            >
+              {NPC_PERSONAS.map(personaOption => (
+                <option key={personaOption.id} value={personaOption.id}>{personaOption.name}</option>
+              ))}
+            </select>
+            <label className="flex items-center gap-3 rounded-3xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm">
+              <input
+                type="checkbox"
+                checked={demoMode}
+                onChange={e => {
+                  setDemoMode(e.target.checked);
+                  setHistory([]);
+                  setDemoIndex(0);
+                  setError(null);
+                }}
+                className="h-4 w-4 rounded border border-zinc-300 bg-white"
+              />
+              <span className="font-medium">Demo Mode — pre-scripted exchange (no API call)</span>
+            </label>
+            <div className="text-sm text-zinc-600 space-y-2">
+              <p><strong>Role:</strong> {persona.role}</p>
+              <p><strong>Context:</strong> {persona.openingContext}</p>
+              <p><strong>Pushback style:</strong> {persona.pushback}</p>
+            </div>
+          </div>
+        </Card>
+
+        <div className="space-y-4">
+          {demoMode ? (
+            <Card title="Demo Mode" subtitle="Pre-scripted persona exchange with no API call.">
+              <div className="space-y-4">
+                <p className="text-sm text-zinc-600">Demo Mode walks through a fixed stakeholder exchange. Use the button below to advance each turn.</p>
+                <button
+                  onClick={handleDemoNext}
+                  disabled={isDemoComplete || !demoScenario}
+                  className="inline-flex items-center justify-center rounded-full bg-zinc-900 px-5 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {demoScenario ? (isDemoComplete ? 'Demo complete' : 'Next exchange') : 'No demo script for this persona'}
+                </button>
+                {!demoScenario && (
+                  <p className="text-sm text-rose-700">No demo script has been authored for this persona yet.</p>
+                )}
+              </div>
+            </Card>
+          ) : !llmConfig.apiKey ? (
+            <Card title={`${providerLabel} key required`} subtitle={`Enter your ${providerLabel} API key in Settings to use this simulator.`}>
+              <p className="text-sm text-zinc-600">NPC simulation needs a live {providerLabel} API key. It is stored in your browser only.</p>
+            </Card>
+          ) : (
             <Card title="Conversation" subtitle="Send a prompt and get a realistic response.">
               <div className="space-y-4">
                 <textarea
@@ -967,36 +1069,37 @@ const NpcSimView = ({
                   onChange={e => setDraft(e.target.value)}
                   rows={5}
                   placeholder="Ask for feedback on your audit memo, risk finding, or evidence summary."
-                  className="w-full rounded-3xl border border-zinc-200 p-4 text-sm text-zinc-700 resize-none"
+                  disabled={demoMode}
+                  className="w-full rounded-3xl border border-zinc-200 p-4 text-sm text-zinc-700 resize-none disabled:cursor-not-allowed disabled:bg-zinc-100"
                 />
                 {error && <p className="text-sm text-rose-700">{error}</p>}
                 <button
                   onClick={openChat}
-                  disabled={loading}
+                  disabled={loading || demoMode}
                   className="inline-flex items-center gap-2 rounded-full bg-zinc-900 px-5 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? 'Thinking…' : `Send to ${providerLabel}`}
                 </button>
               </div>
             </Card>
+          )}
 
-            <Card title="Chat history" subtitle={selectedTask ? `Task: ${formatWpTitle(selectedTask.workPaperId)}` : 'No task selected'}>
-              <div className="space-y-4 max-h-[420px] overflow-y-auto pr-2">
-                {history.length === 0 ? (
-                  <p className="text-sm text-zinc-500">No messages yet. Start by asking a question.</p>
-                ) : (
-                  history.map((message, index) => (
-                    <div key={`${message.role}-${index}`} className={`rounded-3xl p-4 ${message.role === 'assistant' ? 'bg-zinc-100' : 'bg-blue-50'}`}>
-                      <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-400 mb-2">{message.role === 'assistant' ? persona.name : 'You'}</p>
-                      <p className="text-sm text-zinc-700 whitespace-pre-wrap">{message.content}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </Card>
-          </div>
+          <Card title="Chat history" subtitle={selectedTask ? `Task: ${formatWpTitle(selectedTask.workPaperId)}` : 'No task selected'}>
+            <div className="space-y-4 max-h-[420px] overflow-y-auto pr-2">
+              {history.length === 0 ? (
+                <p className="text-sm text-zinc-500">No messages yet. Start by asking a question or advancing the demo.</p>
+              ) : (
+                history.map((message, index) => (
+                  <div key={`${message.role}-${index}`} className={`rounded-3xl p-4 ${message.role === 'assistant' ? 'bg-zinc-100' : 'bg-blue-50'}`}>
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-400 mb-2">{message.role === 'assistant' ? persona.name : 'You'}</p>
+                    <p className="text-sm text-zinc-700 whitespace-pre-wrap">{message.content}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
         </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -1268,6 +1371,37 @@ const AiTutorModal = ({
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [demoScenarioId, setDemoScenarioId] = useState<string | null>(null);
+  const [demoStep, setDemoStep] = useState(0);
+
+  const demoScenario = useMemo(
+    () => DEMO_NPC_RESPONSES.find(s => s.personaId === demoScenarioId) ?? null,
+    [demoScenarioId]
+  );
+  const demoExhausted = demoScenario ? demoStep >= demoScenario.exchanges.length : false;
+
+  const startDemo = (personaId: string) => {
+    const scenario = DEMO_NPC_RESPONSES.find(s => s.personaId === personaId);
+    if (!scenario) return;
+    setDemoScenarioId(personaId);
+    setDemoStep(0);
+    setMessages([]);
+    setError(null);
+  };
+
+  const advanceDemo = () => {
+    if (!demoScenario) return;
+    const nextPair = demoScenario.exchanges.slice(demoStep, demoStep + 2);
+    if (nextPair.length === 0) return;
+    setMessages(prev => [...prev, ...nextPair]);
+    setDemoStep(demoStep + nextPair.length);
+  };
+
+  const exitDemo = () => {
+    setDemoScenarioId(null);
+    setDemoStep(0);
+    setMessages([]);
+  };
 
   const systemPrompt = useMemo(() => {
     const workPapersList = WORKPAPER_DEFINITIONS
@@ -1311,6 +1445,8 @@ Be terse, technical, supportive. Render commands in fenced code blocks, formatte
     }
   };
 
+  const trapRef = useModalFocusTrap(isOpen, onClose);
+
   if (!isOpen) return null;
 
   return (
@@ -1320,8 +1456,12 @@ Be terse, technical, supportive. Render commands in fenced code blocks, formatte
       exit={{ opacity: 0 }}
       onClick={onClose}
       className="fixed inset-0 bg-black/60 z-50 flex items-end md:items-center md:justify-end"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Audit Coach"
     >
       <motion.div
+        ref={trapRef}
         initial={{ x: 400, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: 400, opacity: 0 }}
@@ -1346,9 +1486,36 @@ Be terse, technical, supportive. Render commands in fenced code blocks, formatte
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {!grokKey ? (
-            <div className="rounded-lg bg-amber-950/40 border border-amber-700/40 p-3 text-sm text-amber-200">
-              Add your <strong>{providerLabel}</strong> API key in <strong>Settings</strong> to chat with the coach. The key stays in your browser only.
+          {!grokKey && !demoScenarioId ? (
+            <div className="space-y-3">
+              <div className="rounded-lg bg-amber-950/40 border border-amber-700/40 p-3 text-sm text-amber-200">
+                Add your <strong>{providerLabel}</strong> API key in <strong>Settings</strong> to chat with the live coach. The key stays in your browser only.
+              </div>
+              <div className="rounded-lg bg-indigo-950/40 border border-indigo-700/40 p-3 text-sm text-indigo-200 space-y-2">
+                <p className="font-semibold text-indigo-100">No key? Try a scripted demo.</p>
+                <p className="text-xs text-indigo-300">Walk through a sample audit conversation with one of the program personas — no API call, no quota.</p>
+                <div className="flex flex-col gap-1.5 pt-1">
+                  <button onClick={() => startDemo('sandra-park')} className="text-left rounded bg-indigo-900/50 hover:bg-indigo-800/60 border border-indigo-700/50 px-2 py-1.5 text-xs">
+                    <span className="font-bold text-indigo-100">Sandra Park</span> <span className="text-indigo-300">— HIPAA / EU AI Act on MedAssist</span>
+                  </button>
+                  <button onClick={() => startDemo('sarah-chen')} className="text-left rounded bg-indigo-900/50 hover:bg-indigo-800/60 border border-indigo-700/50 px-2 py-1.5 text-xs">
+                    <span className="font-bold text-indigo-100">Sarah Chen</span> <span className="text-indigo-300">— EEOC 4/5 rule on TalentMatch</span>
+                  </button>
+                  <button onClick={() => startDemo('alex-kim')} className="text-left rounded bg-indigo-900/50 hover:bg-indigo-800/60 border border-indigo-700/50 px-2 py-1.5 text-xs">
+                    <span className="font-bold text-indigo-100">Alex Kim</span> <span className="text-indigo-300">— ISO 42001 on SupportBot</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : demoScenarioId ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between rounded-lg bg-indigo-950/40 border border-indigo-700/40 px-3 py-2 text-xs text-indigo-200">
+                <span><strong>Demo mode</strong> · scripted exchange · step {Math.min(demoStep, demoScenario?.exchanges.length ?? 0)} / {demoScenario?.exchanges.length ?? 0}</span>
+                <button onClick={exitDemo} className="text-indigo-300 hover:text-white text-[10px] uppercase tracking-wider">Exit demo</button>
+              </div>
+              {messages.length === 0 && (
+                <p className="text-xs text-zinc-500 italic">Press &ldquo;Advance demo&rdquo; below to reveal the next exchange.</p>
+              )}
             </div>
           ) : messages.length === 0 ? (
             <div className="text-sm text-zinc-400 space-y-2">
@@ -1375,27 +1542,39 @@ Be terse, technical, supportive. Render commands in fenced code blocks, formatte
         </div>
 
         <div className="border-t border-zinc-800 p-3 space-y-2">
-          <textarea
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-            rows={3}
-            placeholder={grokKey ? 'Ask about WP-03 prompt injection, evidence paths, etc. (Ctrl+Enter to send)' : `Add a ${providerLabel} API key in Settings first.`}
-            disabled={!grokKey || loading}
-            className="w-full rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 placeholder-zinc-500 p-2 text-sm resize-none focus:border-blue-500 focus:outline-none disabled:opacity-60"
-          />
-          <button
-            onClick={sendMessage}
-            disabled={loading || !draft.trim() || !grokKey}
-            className="w-full rounded-lg bg-blue-600 text-white px-3 py-2 text-sm font-bold hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Sending…' : `Send to ${providerLabel}`}
-          </button>
+          {demoScenarioId ? (
+            <button
+              onClick={advanceDemo}
+              disabled={demoExhausted}
+              className="w-full rounded-lg bg-indigo-600 text-white px-3 py-2 text-sm font-bold hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {demoExhausted ? 'Demo complete — add an API key for live questions' : 'Advance demo'}
+            </button>
+          ) : (
+            <>
+              <textarea
+                value={draft}
+                onChange={e => setDraft(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+                rows={3}
+                placeholder={grokKey ? 'Ask about WP-03 prompt injection, evidence paths, etc. (Ctrl+Enter to send)' : `Add a ${providerLabel} API key in Settings first.`}
+                disabled={!grokKey || loading}
+                className="w-full rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 placeholder-zinc-500 p-2 text-sm resize-none focus:border-blue-500 focus:outline-none disabled:opacity-60"
+              />
+              <button
+                onClick={sendMessage}
+                disabled={loading || !draft.trim() || !grokKey}
+                className="w-full rounded-lg bg-blue-600 text-white px-3 py-2 text-sm font-bold hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Sending…' : `Send to ${providerLabel}`}
+              </button>
+            </>
+          )}
         </div>
       </motion.div>
     </motion.div>
@@ -1422,6 +1601,7 @@ export default function App() {
   const [referenceTab, setReferenceTab] = useState<ReferenceTab>('orgs');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
+  const shortcutTrapRef = useModalFocusTrap(showShortcutHelp, () => setShowShortcutHelp(false));
   const [isTutorOpen, setIsTutorOpen] = useState(false);
   const [noviceMode, setNoviceMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('auditai-novice-mode');
@@ -1432,8 +1612,39 @@ export default function App() {
     return (saved as 'windows' | 'macos-linux') || 'macos-linux';
   });
 
-  const [completedTasks, setCompletedTasks] = useState<string[]>(() => loadJsonArray('auditai-progress'));
+  const [completedTasks, setCompletedTasks] = useState<string[]>(() => {
+    const stored = loadJsonArray('auditai-progress');
+    if (stored.length > 0) return stored;
+    const hasVisited = localStorage.getItem('auditai-has-visited');
+    return hasVisited ? stored : ['wp-01-t01'];
+  });
   const [workpaperData, setWorkpaperData] = useState<Record<string, WorkPaperRecord>>(() => loadWorkpapers());
+  const [hasVisited, setHasVisited] = useState<boolean>(() => Boolean(localStorage.getItem('auditai-has-visited')));
+  const [schemaWarning, setSchemaWarning] = useState<string | null>(null);
+
+  useEffect(() => {
+    const raw = localStorage.getItem('auditai-schema-version');
+    if (!raw) {
+      localStorage.setItem('auditai-schema-version', String(SCHEMA_VERSION));
+      return;
+    }
+    const stored = Number(raw);
+    if (Number.isNaN(stored)) {
+      localStorage.setItem('auditai-schema-version', String(SCHEMA_VERSION));
+      return;
+    }
+    if (stored < SCHEMA_VERSION) {
+      // Migration placeholder: when SCHEMA_VERSION bumps in future, add migration steps here.
+      localStorage.setItem('auditai-schema-version', String(SCHEMA_VERSION));
+    } else if (stored > SCHEMA_VERSION) {
+      setSchemaWarning('Saved progress is from a newer version — some data may not load correctly.');
+    }
+  }, []);
+
+  const dismissIntro = () => {
+    localStorage.setItem('auditai-has-visited', '1');
+    setHasVisited(true);
+  };
 
   useEffect(() => {
     localStorage.setItem('auditai-progress', JSON.stringify(completedTasks));
@@ -1554,7 +1765,7 @@ export default function App() {
 
   const exportProgress = () => {
     const payload = {
-      version: 1,
+      version: SCHEMA_VERSION,
       exportedAt: new Date().toISOString(),
       progress: completedTasks,
       workpapers: workpaperData,
@@ -1578,9 +1789,12 @@ export default function App() {
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
-        if (data.version !== 1) {
+        if (typeof data.version !== 'number') {
           alert('Unsupported file version.');
           return;
+        }
+        if (data.version > SCHEMA_VERSION) {
+          alert(`This file is from a newer version (v${data.version}); some data may not import correctly.`);
         }
         if (!confirm('This will overwrite current progress. Continue?')) return;
         setCompletedTasks(Array.isArray(data.progress) ? data.progress : []);
@@ -1668,9 +1882,11 @@ export default function App() {
       </button>
 
       <button
-        onClick={() => setIsSidebarOpen(true)}
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
         className="md:hidden fixed top-3 left-3 z-30 bg-white border border-zinc-200 rounded-lg p-2 shadow-sm"
-        aria-label="Open menu"
+        aria-label={isSidebarOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={isSidebarOpen}
+        aria-controls="primary-sidebar"
       >
         <Menu size={18} />
       </button>
@@ -1683,6 +1899,9 @@ export default function App() {
       )}
 
       <aside
+        id="primary-sidebar"
+        role="navigation"
+        aria-label="Primary"
         className={`fixed md:static z-40 inset-y-0 left-0 w-60 border-r border-zinc-200/80 bg-white/85 backdrop-blur-md px-4 py-6 flex flex-col shrink-0 transition-transform duration-200 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
@@ -1752,6 +1971,8 @@ export default function App() {
                   completedWPs={completedWPs}
                   totalWPs={totalWPs}
                   onJumpToTask={onSelectTask}
+                  showIntro={!hasVisited}
+                  onDismissIntro={dismissIntro}
                 />
               )}
 
@@ -1802,8 +2023,36 @@ export default function App() {
               )}
             </motion.div>
           </AnimatePresence>
+          <footer className="text-center text-xs text-zinc-400 py-6">
+            AuditAI Range v{APP_VERSION} ·{' '}
+            <a
+              href="https://github.com/djha786543-gif/AuditAIrange"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-zinc-600 underline-offset-2 hover:underline"
+            >
+              GitHub
+            </a>{' '}
+            · Built by Deobrat Jha
+          </footer>
         </div>
       </main>
+
+      {schemaWarning && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-md w-full px-4">
+          <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 shadow-lg flex items-start gap-3">
+            <AlertTriangle size={16} className="text-amber-700 mt-0.5 shrink-0" />
+            <p className="text-sm text-amber-900 flex-1">{schemaWarning}</p>
+            <button
+              onClick={() => setSchemaWarning(null)}
+              className="text-amber-700 hover:text-amber-900"
+              aria-label="Dismiss warning"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
 
       <AiTutorButton llmConfig={llmConfig} onClick={() => setIsTutorOpen(true)} />
 
@@ -1826,8 +2075,12 @@ export default function App() {
             exit={{ opacity: 0 }}
             onClick={() => setShowShortcutHelp(false)}
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Keyboard shortcuts"
           >
             <motion.div
+              ref={shortcutTrapRef}
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}

@@ -29,4 +29,4 @@ fi
 docker compose config > /dev/null
 printf 'docker-compose.yml is valid.\n'
 
-printf '\nSetup helper complete. To start the lab, run:\n  docker compose up -d\n'
+printf '\nSetup helper complete. To start the lab, run:\n  docker compose up -d\n\nA runnable bias audit demo is available at scripts/wp07_bias_audit_demo.py:\n  source audit-env/bin/activate\n  python scripts/wp07_bias_audit_demo.py --dataset wp-07 --output 07_evidence/wp-07/bias_results.json\n'

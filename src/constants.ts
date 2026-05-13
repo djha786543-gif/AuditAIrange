@@ -59,6 +59,7 @@ export interface Task {
   command?: string;
   commandWindows?: string;
   commandMacLinux?: string;
+  commandIsIllustrative?: boolean;
   automationCommandWindows?: string;
   automationCommandMacLinux?: string;
   expectedOutput?: string;

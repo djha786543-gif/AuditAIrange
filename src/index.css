@@ -39,6 +39,14 @@
     color: transparent;
   }
 
+  @media (prefers-contrast: more) {
+    .gradient-text {
+      background: none;
+      -webkit-text-fill-color: unset;
+      color: #18181b;
+    }
+  }
+
   .eyebrow {
     @apply text-xs font-semibold uppercase tracking-[0.22em] text-indigo-700/95;
   }
