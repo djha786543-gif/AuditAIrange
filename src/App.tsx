@@ -298,6 +298,10 @@ const NowView = ({
             Toggle <strong>Novice Mode</strong> in the sidebar for step-by-step explanations. Try <strong>Demo Mode</strong> in
             NPC Practice to see stakeholder pushback without an API key.
           </p>
+          <p className="text-xs text-zinc-500 pt-1">
+            Your progress is saved only in this browser — nothing is sent to a server, and other visitors have their own
+            private workspace.
+          </p>
         </div>
         <button
           onClick={onDismissIntro}
@@ -1589,6 +1593,23 @@ Be terse, technical, supportive. Render commands in fenced code blocks, formatte
 // APP
 // ============================================================
 
+function applyFreshParamIfPresent() {
+  if (typeof window === 'undefined') return false;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('fresh') !== '1') return false;
+  Object.keys(localStorage)
+    .filter(k => k.startsWith('auditai-'))
+    .forEach(k => localStorage.removeItem(k));
+  sessionStorage.removeItem('auditai-visit-counted');
+  params.delete('fresh');
+  const qs = params.toString();
+  const next = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash;
+  window.history.replaceState(null, '', next);
+  return true;
+}
+
+applyFreshParamIfPresent();
+
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('now');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(() => localStorage.getItem('auditai-selected-task') || null);
@@ -1616,12 +1637,7 @@ export default function App() {
     return (saved as 'windows' | 'macos-linux') || 'macos-linux';
   });
 
-  const [completedTasks, setCompletedTasks] = useState<string[]>(() => {
-    const stored = loadJsonArray('auditai-progress');
-    if (stored.length > 0) return stored;
-    const hasVisited = localStorage.getItem('auditai-has-visited');
-    return hasVisited ? stored : ['wp-01-t01'];
-  });
+  const [completedTasks, setCompletedTasks] = useState<string[]>(() => loadJsonArray('auditai-progress'));
   const [workpaperData, setWorkpaperData] = useState<Record<string, WorkPaperRecord>>(() => loadWorkpapers());
   const [hasVisited, setHasVisited] = useState<boolean>(() => Boolean(localStorage.getItem('auditai-has-visited')));
   const [schemaWarning, setSchemaWarning] = useState<string | null>(null);
