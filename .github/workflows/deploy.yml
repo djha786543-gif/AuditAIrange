@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Load build-time env from .env.example
+        run: cp .env.example .env
+
       - name: Build
         env:
           GITHUB_PAGES: 'true'

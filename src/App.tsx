@@ -23,6 +23,8 @@ import {
   Copy,
   Check,
   Sparkles,
+  MessageSquare,
+  Eye,
   type LucideIcon,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -38,12 +40,14 @@ import {
 import { callLlm, PROVIDER_DEFAULTS, GROQ_MODELS, GROK_MODELS, type LlmConfig, type LlmProvider } from './lib/llm.ts';
 import { TASKS } from './data/tasks.ts';
 import { DEMO_NPC_RESPONSES } from './data/demo-npc-responses.ts';
+import { FeedbackView } from './components/FeedbackView.tsx';
+import { useVisitorCount } from './lib/analytics.ts';
 
 // ============================================================
 // TYPES
 // ============================================================
 
-type View = 'now' | 'queue' | 'reference' | 'npc' | 'settings' | 'workpapers';
+type View = 'now' | 'queue' | 'reference' | 'npc' | 'settings' | 'workpapers' | 'feedback';
 type ReferenceTab = 'orgs' | 'suts' | 'frameworks' | 'tools';
 type WorkPaperStatus = 'not-started' | 'in-progress' | 'needs-revision' | 'complete' | 'redo';
 
@@ -1821,7 +1825,10 @@ export default function App() {
     { view: 'queue' as View, icon: ClipboardCheck, label: 'Task queue', badge: completedCount },
     { view: 'npc' as View, icon: Users, label: 'NPC practice' },
     { view: 'reference' as View, icon: BookOpen, label: 'Reference' },
+    { view: 'feedback' as View, icon: MessageSquare, label: 'Feedback' },
   ];
+
+  const visitor = useVisitorCount();
 
   useEffect(() => {
     let firstKey: string | null = null;
@@ -1848,7 +1855,7 @@ export default function App() {
       if (firstKey === 'g') {
         firstKey = null;
         if (resetTimer) clearTimeout(resetTimer);
-        const map: Record<string, View> = { n: 'now', q: 'queue', p: 'npc', r: 'reference', s: 'settings' };
+        const map: Record<string, View> = { n: 'now', q: 'queue', p: 'npc', r: 'reference', s: 'settings', f: 'feedback' };
         const next = map[e.key.toLowerCase()];
         if (next) {
           e.preventDefault();
@@ -1996,6 +2003,8 @@ export default function App() {
                 <NpcSimView llmConfig={llmConfig} selectedTask={currentTask ?? nextTask ?? null} onActivity={trackActivity} />
               )}
 
+              {currentView === 'feedback' && <FeedbackView />}
+
               {currentView === 'settings' && (
                 <SettingsView
                   provider={provider}
@@ -2023,8 +2032,9 @@ export default function App() {
               )}
             </motion.div>
           </AnimatePresence>
-          <footer className="text-center text-xs text-zinc-400 py-6">
-            AuditAI Range v{APP_VERSION} ·{' '}
+          <footer className="text-center text-xs text-zinc-400 py-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+            <span>AuditAI Range v{APP_VERSION}</span>
+            <span aria-hidden>·</span>
             <a
               href="https://github.com/djha786543-gif/AuditAIrange"
               target="_blank"
@@ -2032,8 +2042,18 @@ export default function App() {
               className="hover:text-zinc-600 underline-offset-2 hover:underline"
             >
               GitHub
-            </a>{' '}
-            · Built by Deobrat Jha
+            </a>
+            <span aria-hidden>·</span>
+            <span>Built by Deobrat Jha</span>
+            {visitor.configured && visitor.count !== null && (
+              <Fragment>
+                <span aria-hidden>·</span>
+                <span className="inline-flex items-center gap-1" title="Total portal visits">
+                  <Eye size={11} />
+                  {visitor.count.toLocaleString()} visits
+                </span>
+              </Fragment>
+            )}
           </footer>
         </div>
       </main>
@@ -2099,6 +2119,7 @@ export default function App() {
                   { keys: ['g', 'q'], label: 'Go to Task queue' },
                   { keys: ['g', 'p'], label: 'Go to NPC practice' },
                   { keys: ['g', 'r'], label: 'Go to Reference' },
+                  { keys: ['g', 'f'], label: 'Go to Feedback' },
                   { keys: ['g', 's'], label: 'Go to Settings' },
                   { keys: ['?'], label: 'Toggle this help' },
                 ].map(s => (
