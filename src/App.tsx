@@ -645,7 +645,7 @@ const TaskQueueView = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] gap-7 mb-20 w-full">
       <div className="space-y-6 min-w-0">
-        <div className="lg:sticky lg:top-6 z-20 p-5 rounded-[2rem] border border-zinc-200/70 bg-white/95 shadow-[0_12px_40px_-28px_rgba(15,23,42,0.35)]">
+        <div className="p-5 rounded-[2rem] border border-zinc-200/70 bg-white/95 shadow-[0_12px_40px_-28px_rgba(15,23,42,0.35)]">
           <p className="eyebrow">Task queue</p>
           <h2 className="text-2xl font-semibold mt-2 tracking-tight text-slate-900">
             Your current workflow
