@@ -96,6 +96,16 @@ function formatWpTitle(workPaperId: string) {
   return workPaperId.toUpperCase().replace('WP-', 'WP ');
 }
 
+const WORKPAPER_BY_ID: Record<string, typeof WORKPAPER_DEFINITIONS[number]> =
+  WORKPAPER_DEFINITIONS.reduce((acc, wp) => {
+    acc[wp.id] = wp;
+    return acc;
+  }, {} as Record<string, typeof WORKPAPER_DEFINITIONS[number]>);
+
+function getWpPurpose(workPaperId: string): string | undefined {
+  return WORKPAPER_BY_ID[workPaperId]?.purpose;
+}
+
 const PHASE_LABELS = {
   setup: 'Setup',
   execute: 'Execute',
@@ -346,6 +356,9 @@ const NowView = ({
             <div>
               <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-2">Deliverable</p>
               <p className="font-semibold text-zinc-900">{formatWpTitle(nextTask.workPaperId)}</p>
+              {getWpPurpose(nextTask.workPaperId) && (
+                <p className="text-xs text-zinc-500 mt-1 leading-snug">{getWpPurpose(nextTask.workPaperId)}</p>
+              )}
             </div>
           </div>
           <div>
@@ -436,6 +449,11 @@ const NoviceTaskDetail = ({
               <p className="font-semibold text-zinc-900">{formatWpTitle(task.workPaperId)}</p>
             </div>
           </div>
+          {getWpPurpose(task.workPaperId) && (
+            <p className="text-xs text-zinc-600 mt-3 leading-snug bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2">
+              <span className="font-semibold text-zinc-700">What this work paper is for:</span> {getWpPurpose(task.workPaperId)}
+            </p>
+          )}
         </div>
 
         <div className="border-t border-zinc-200 pt-6">
@@ -644,6 +662,11 @@ const TaskQueueView = ({
                 subtitle={`${completedCount}/${groupTasks.length} complete`}
                 className="!p-4"
               >
+                {getWpPurpose(workPaperId) && (
+                  <p className="text-[11px] leading-snug text-zinc-600 mb-3 -mt-1">
+                    {getWpPurpose(workPaperId)}
+                  </p>
+                )}
                 <div className="space-y-2">
                   {groupTasks.map(task => {
                     const isCompleted = completedTasks.includes(task.id);
@@ -710,6 +733,11 @@ const TaskQueueView = ({
                     <p className="font-semibold text-zinc-900">{formatWpTitle(selectedTask.workPaperId)}</p>
                   </div>
                 </div>
+                {getWpPurpose(selectedTask.workPaperId) && (
+                  <p className="text-xs text-zinc-600 mt-3 leading-snug bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2">
+                    <span className="font-semibold text-zinc-700">What this work paper is for:</span> {getWpPurpose(selectedTask.workPaperId)}
+                  </p>
+                )}
               </div>
 
               <div>

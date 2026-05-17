@@ -117,6 +117,7 @@ export interface WorkPaperDef {
   anchor: string;
   type: 'workpaper' | 'capstone';
   frameworks: string[];
+  purpose: string;
 }
 
 export interface CrosswalkRow {
@@ -729,22 +730,38 @@ export const PROGRAM_RISKS: ProgramRisk[] = [
 // ============================================================
 
 export const WORKPAPER_DEFINITIONS: WorkPaperDef[] = [
-  { id: 'wp-01', number: 1, title: 'Lab Readiness Memo', phaseId: 1, anchor: 'All Orgs', type: 'workpaper', frameworks: [] },
-  { id: 'wp-02', number: 2, title: 'AI Inventory + Risk Register', phaseId: 1, anchor: 'All Orgs', type: 'workpaper', frameworks: ['EU AI Act', 'NIST AI RMF Map'] },
-  { id: 'wp-03', number: 3, title: 'Direct Injection Findings Report', phaseId: 2, anchor: 'Helix', type: 'workpaper', frameworks: ['HIPAA', 'OWASP LLM01', 'EU AI Act Art. 15'] },
-  { id: 'wp-04', number: 4, title: 'Indirect Injection + RAG Exfil Report', phaseId: 2, anchor: 'Nimbus', type: 'workpaper', frameworks: ['ISO 42001', 'SOC 2', 'GDPR', 'OWASP LLM06'] },
-  { id: 'wp-05', number: 5, title: 'Agent Security Assessment', phaseId: 2, anchor: 'Stellar + Nimbus', type: 'workpaper', frameworks: ['OWASP Agentic AI', 'MITRE ATLAS'] },
-  { id: 'wp-06', number: 6, title: 'Reliability Audit Report', phaseId: 2, anchor: 'Helix + Nimbus', type: 'workpaper', frameworks: ['EU AI Act Art. 13', 'ISO 42001 A.6.2.4'] },
-  { id: 'wp-07', number: 7, title: 'NYC LL 144 Bias Audit Report', phaseId: 3, anchor: 'Stellar', type: 'workpaper', frameworks: ['NYC LL 144', 'EEOC 4/5 Rule', 'EU AI Act Annex III'] },
-  { id: 'wp-08', number: 8, title: 'LLM Bias Audit Memo — Clinical Equity', phaseId: 3, anchor: 'Helix', type: 'workpaper', frameworks: ['NIST Measure 2.11', 'EU AI Act Art. 10'] },
-  { id: 'wp-09', number: 9, title: 'Advanced Fairness Memo — Counterfactual', phaseId: 3, anchor: 'Stellar', type: 'workpaper', frameworks: ['ECOA', 'EU AI Act Annex III §5(b)', 'SR 11-7'] },
-  { id: 'wp-10', number: 10, title: 'NIST AI RMF Maturity Assessment', phaseId: 4, anchor: 'All Orgs', type: 'workpaper', frameworks: ['NIST AI RMF 1.0', 'NIST AI 600-1'] },
-  { id: 'wp-11', number: 11, title: 'ISO 42001 Gap Assessment', phaseId: 4, anchor: 'Nimbus', type: 'workpaper', frameworks: ['ISO/IEC 42001:2023'] },
-  { id: 'wp-12', number: 12, title: 'Multi-Framework Compliance Memo', phaseId: 4, anchor: 'Helix + Stellar', type: 'workpaper', frameworks: ['EU AI Act Annex III', 'SR 11-7', 'OCC 2011-12'] },
-  { id: 'wp-13', number: 13, title: 'Vendor Risk Assessment', phaseId: 5, anchor: 'Helix / Nimbus', type: 'workpaper', frameworks: ['HIPAA BAA', 'GDPR Art. 28', 'ISO 42001 A.10.2'] },
-  { id: 'wp-14', number: 14, title: 'Monitoring Architecture + IR Playbook', phaseId: 5, anchor: 'Stellar', type: 'workpaper', frameworks: ['SR 11-7 §V', 'NIST RMF Manage 4.1'] },
-  { id: 'wp-15', number: 15, title: 'Capstone Audit Report — Draft (v1)', phaseId: 6, anchor: 'Helix Health', type: 'workpaper', frameworks: ['All'] },
-  { id: 'wp-cap', number: 16, title: 'Capstone Audit Report — Final (50–70 pages)', phaseId: 6, anchor: 'Helix Health', type: 'capstone', frameworks: ['NIST AI RMF', 'ISO 42001', 'EU AI Act', 'HIPAA'] }
+  { id: 'wp-01', number: 1, title: 'Lab Readiness Memo', phaseId: 1, anchor: 'All Orgs', type: 'workpaper', frameworks: [],
+    purpose: 'Prove the audit lab and tools all work end-to-end before testing real AI systems.' },
+  { id: 'wp-02', number: 2, title: 'AI Inventory + Risk Register', phaseId: 1, anchor: 'All Orgs', type: 'workpaper', frameworks: ['EU AI Act', 'NIST AI RMF Map'],
+    purpose: 'Catalog every AI system across the 3 orgs and rank each by regulatory + business risk.' },
+  { id: 'wp-03', number: 3, title: 'Direct Injection Findings Report', phaseId: 2, anchor: 'Helix', type: 'workpaper', frameworks: ['HIPAA', 'OWASP LLM01', 'EU AI Act Art. 15'],
+    purpose: 'Prove the clinical chatbot can be jailbroken into leaking PHI or breaking its own safety rules.' },
+  { id: 'wp-04', number: 4, title: 'Indirect Injection + RAG Exfil Report', phaseId: 2, anchor: 'Nimbus', type: 'workpaper', frameworks: ['ISO 42001', 'SOC 2', 'GDPR', 'OWASP LLM06'],
+    purpose: 'Prove a poisoned document in the knowledge base can leak data across tenant boundaries.' },
+  { id: 'wp-05', number: 5, title: 'Agent Security Assessment', phaseId: 2, anchor: 'Stellar + Nimbus', type: 'workpaper', frameworks: ['OWASP Agentic AI', 'MITRE ATLAS'],
+    purpose: 'Show the AI agent’s tools can be hijacked or its privileges escalated.' },
+  { id: 'wp-06', number: 6, title: 'Reliability Audit Report', phaseId: 2, anchor: 'Helix + Nimbus', type: 'workpaper', frameworks: ['EU AI Act Art. 13', 'ISO 42001 A.6.2.4'],
+    purpose: 'Measure how often the model is wrong (hallucinations) and how it behaves under stress.' },
+  { id: 'wp-07', number: 7, title: 'NYC LL 144 Bias Audit Report', phaseId: 3, anchor: 'Stellar', type: 'workpaper', frameworks: ['NYC LL 144', 'EEOC 4/5 Rule', 'EU AI Act Annex III'],
+    purpose: 'Statutory bias audit for the HR resume-screener — required by NYC law before it can be used.' },
+  { id: 'wp-08', number: 8, title: 'LLM Bias Audit Memo — Clinical Equity', phaseId: 3, anchor: 'Helix', type: 'workpaper', frameworks: ['NIST Measure 2.11', 'EU AI Act Art. 10'],
+    purpose: 'Check whether the clinical AI delivers equal-quality care across demographic groups.' },
+  { id: 'wp-09', number: 9, title: 'Advanced Fairness Memo — Counterfactual', phaseId: 3, anchor: 'Stellar', type: 'workpaper', frameworks: ['ECOA', 'EU AI Act Annex III §5(b)', 'SR 11-7'],
+    purpose: 'Test the credit model for counterfactual and intersectional fairness under ECOA.' },
+  { id: 'wp-10', number: 10, title: 'NIST AI RMF Maturity Assessment', phaseId: 4, anchor: 'All Orgs', type: 'workpaper', frameworks: ['NIST AI RMF 1.0', 'NIST AI 600-1'],
+    purpose: 'Score each org’s AI-governance maturity against the NIST AI RMF (Govern / Map / Measure / Manage).' },
+  { id: 'wp-11', number: 11, title: 'ISO 42001 Gap Assessment', phaseId: 4, anchor: 'Nimbus', type: 'workpaper', frameworks: ['ISO/IEC 42001:2023'],
+    purpose: 'Identify ISO 42001 control gaps so Nimbus knows what to fix before a certification audit.' },
+  { id: 'wp-12', number: 12, title: 'Multi-Framework Compliance Memo', phaseId: 4, anchor: 'Helix + Stellar', type: 'workpaper', frameworks: ['EU AI Act Annex III', 'SR 11-7', 'OCC 2011-12'],
+    purpose: 'Reconcile findings across EU AI Act, SR 11-7, and OCC into a single gap matrix.' },
+  { id: 'wp-13', number: 13, title: 'Vendor Risk Assessment', phaseId: 5, anchor: 'Helix / Nimbus', type: 'workpaper', frameworks: ['HIPAA BAA', 'GDPR Art. 28', 'ISO 42001 A.10.2'],
+    purpose: 'Audit Nimbus as a third-party AI vendor that Helix relies on — DPAs, BAAs, model cards, attestations.' },
+  { id: 'wp-14', number: 14, title: 'Monitoring Architecture + IR Playbook', phaseId: 5, anchor: 'Stellar', type: 'workpaper', frameworks: ['SR 11-7 §V', 'NIST RMF Manage 4.1'],
+    purpose: 'Design ongoing drift monitoring and the AI incident-response playbook for production.' },
+  { id: 'wp-15', number: 15, title: 'Capstone Audit Report — Draft (v1)', phaseId: 6, anchor: 'Helix Health', type: 'workpaper', frameworks: ['All'],
+    purpose: 'First full draft of the 50–70 page enterprise audit report, synthesizing every prior finding.' },
+  { id: 'wp-cap', number: 16, title: 'Capstone Audit Report — Final (50–70 pages)', phaseId: 6, anchor: 'Helix Health', type: 'capstone', frameworks: ['NIST AI RMF', 'ISO 42001', 'EU AI Act', 'HIPAA'],
+    purpose: 'Final defended report plus 12-month remediation roadmap, executive deck, and published portfolio.' }
 ];
 
 // ============================================================
