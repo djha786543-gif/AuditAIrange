@@ -25,6 +25,7 @@ import {
   Sparkles,
   MessageSquare,
   Eye,
+  FolderOpen,
   type LucideIcon,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -213,6 +214,18 @@ const Card = ({ children, title, subtitle, className = '', action }: CardProps) 
     <div className="p-6">{children}</div>
   </div>
 );
+
+function RunFromHint() {
+  return (
+    <p className="flex items-center gap-1.5 text-[11px] text-zinc-500 mb-1.5">
+      <FolderOpen size={12} className="text-indigo-500 shrink-0" />
+      <span>
+        Run from your <strong className="text-zinc-700">audit-lab/</strong> root
+        <span className="text-zinc-400"> (the folder containing <code className="bg-zinc-100 px-1 rounded">docker-compose.yml</code>)</span>
+      </span>
+    </p>
+  );
+}
 
 function CopyableCode({ code, label }: { code: string; label?: string }) {
   const [copied, setCopied] = useState(false);
@@ -529,6 +542,7 @@ const NoviceTaskDetail = ({
                               Illustrative — see README
                             </span>
                           )}
+                          <RunFromHint />
                           <CopyableCode
                             label={`step ${idx + 1} command`}
                             code={osType === 'windows' ? (detail.commandWindows || '') : (detail.commandMacLinux || '')}
@@ -557,6 +571,7 @@ const NoviceTaskDetail = ({
                 Illustrative — see README
               </span>
             )}
+            <RunFromHint />
             <CopyableCode
               label="combined command"
               code={(osType === 'windows' ? task.commandWindows : task.commandMacLinux) || ''}
@@ -760,6 +775,7 @@ const TaskQueueView = ({
                       {osType === 'windows' ? 'PowerShell' : 'Bash'}
                     </span>
                   </div>
+                  <RunFromHint />
                   <CopyableCode
                     label="evidence folder script"
                     code={osType === 'windows' ? selectedTask.automationCommandWindows : selectedTask.automationCommandMacLinux}
@@ -775,6 +791,7 @@ const TaskQueueView = ({
                       {osType === 'windows' ? 'Windows · PowerShell' : 'macOS / Linux · Bash'}
                     </span>
                   </div>
+                  <RunFromHint />
                   <CopyableCode
                     label="command"
                     code={(osType === 'windows' ? selectedTask.commandWindows : selectedTask.commandMacLinux) || ''}
@@ -785,6 +802,7 @@ const TaskQueueView = ({
               {selectedTask.command && !selectedTask.commandWindows && !selectedTask.commandMacLinux && (
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-zinc-400 mb-2 font-semibold">Command to run</p>
+                  <RunFromHint />
                   <CopyableCode label="command" code={selectedTask.command} />
                 </div>
               )}
